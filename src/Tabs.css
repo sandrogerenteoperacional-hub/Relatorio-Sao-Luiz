@@ -1,0 +1,35 @@
+/* Add these to the end of App.css */
+.tabs-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  border-radius: 12px;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tab-button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.tab-button:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-button.active {
+  color: var(--bg-dark);
+  background: var(--neon-green);
+  box-shadow: 0 4px 15px var(--neon-green-glow);
+}

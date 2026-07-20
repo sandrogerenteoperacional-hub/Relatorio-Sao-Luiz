@@ -122,10 +122,25 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     const isProfile = nameLower.includes('ig') || nameLower.includes('perfil') || nameLower.includes('instagram');
     
     if (isProfile) {
-      const igVisits = getActionCount(actions, ['profile_visit', 'profile_view', 'profile']);
+      let igVisits = getActionCount(actions, ['profile', 'visit', 'ig', 'instagram', 'page_engagement']);
+      let igCost = getActionCost(costs, ['profile', 'visit', 'ig', 'instagram', 'page_engagement']);
+      
+      // Fallback: Se a Meta usou um nome genérico como page_engagement ou onsite_conversion
+      if (igVisits === 0 && Array.isArray(actions)) {
+        for (const a of actions) {
+          const val = parseFloat(a.value || 0);
+          const type = (a.action_type || '').toLowerCase();
+          if (val > 0 && !type.includes('link_click') && !type.includes('impression') && !type.includes('reach') && !type.includes('click')) {
+            igVisits = val;
+            igCost = getActionCost(costs, [type]);
+            break;
+          }
+        }
+      }
+      
       if (igVisits > 0) {
         result = igVisits;
-        cpa = getActionCost(costs, ['profile_visit', 'profile_view', 'profile']);
+        cpa = igCost > 0 ? igCost : (spend / igVisits);
       } else {
         result = funnelLinkClicks;
         cpa = getActionCost(costs, ['link_click']);

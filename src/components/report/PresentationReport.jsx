@@ -13,7 +13,7 @@ const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
   const handleExportCSV = () => {
     if (!campaigns || campaigns.length === 0) return;
     
-    const headers = ['Campanha', 'Grupo/Objetivo', 'Status', 'Investimento (BRL)', 'Impressões', 'Cliques', 'Alcance', 'Frequência', 'CPC (BRL)', 'CPM (BRL)', 'CTR (%)', 'Resultados', 'Tipo de Resultado', 'CPA (BRL)'];
+    const headers = ['Campanha', 'Grupo/Objetivo', 'Status', 'Investimento (BRL)', 'Impressões', 'Cliques', 'Alcance', 'Frequência', 'CPC (BRL)', 'CPM (BRL)', 'CTR (%)', 'Resultados', 'Tipo de Resultado', 'CPA (BRL)', 'Debug Actions JSON'];
     
     const rows = campaigns.map(c => [
       `"${c.name}"`,
@@ -29,7 +29,8 @@ const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
       c.ctr.toFixed(2),
       c.result,
       `"${c.resultName}"`,
-      c.cpa.toFixed(2)
+      c.cpa.toFixed(2),
+      `"${c.rawActions ? c.rawActions.replace(/"/g, '""') : ''}"`
     ].join(','));
     
     const csvContent = [headers.join(','), ...rows].join('\n');

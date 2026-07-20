@@ -171,6 +171,7 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     resultName,
     cpa,
     isCpmBased,
+    rawActions: JSON.stringify(actions.map(a => `${a.action_type}:${a.value}`)),
     funnel: {
       impressions,
       linkClicks: funnelLinkClicks,
@@ -221,7 +222,7 @@ export const processApiData = (insightsData, campaignsData) => {
     report.summary.totalReach += reach;
 
     const group = getObjectiveGroup(row.objective, name);
-    const { result, resultName, cpa, isCpmBased, funnel } = extractFunnelAndResults(group, row, clicks, impressions, reach, spend);
+    const { result, resultName, cpa, isCpmBased, funnel, rawActions } = extractFunnelAndResults(group, row, clicks, impressions, reach, spend);
     const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
 
     const campData = {
@@ -240,6 +241,7 @@ export const processApiData = (insightsData, campaignsData) => {
       result,
       resultName,
       cpa,
+      rawActions,
       funnel
     };
 

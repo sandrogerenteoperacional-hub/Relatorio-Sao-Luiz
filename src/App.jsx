@@ -32,16 +32,21 @@ function App() {
 
   const getDates = () => {
     const today = new Date();
-    const until = today.toISOString().split('T')[0];
     
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 7);
-    const since7Days = sevenDaysAgo.toISOString().split('T')[0];
-    
-    // First day of current month
+    // For Month (Este Mês), we include today
+    const untilMonth = today.toISOString().split('T')[0];
     const sinceMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
     
-    return { since7Days, sinceMonth, until };
+    // For 7 Days (Últimos 7 dias), Facebook excludes today by default
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const until7Days = yesterday.toISOString().split('T')[0];
+    
+    const sevenDaysAgo = new Date(yesterday);
+    sevenDaysAgo.setDate(yesterday.getDate() - 6); // 6 days before yesterday = 7 days total (e.g. 13 to 19)
+    const since7Days = sevenDaysAgo.toISOString().split('T')[0];
+    
+    return { since7Days, until7Days, sinceMonth, untilMonth };
   };
 
   const loadData = async (forceApi = false, overrideId = null, overrideToken = null) => {
@@ -55,12 +60,12 @@ function App() {
       // Try Meta API first if we have credentials
       if (targetId && targetToken) {
         try {
-          const { since7Days, sinceMonth, until } = getDates();
+          const { since7Days, until7Days, sinceMonth, untilMonth } = getDates();
           
           console.log("Fetching from Meta API...");
           const [insights7Days, insightsMonth, campaignsStatus] = await Promise.all([
-            fetchMetaAdsData(targetId, targetToken, since7Days, until),
-            fetchMetaAdsData(targetId, targetToken, sinceMonth, until),
+            fetchMetaAdsData(targetId, targetToken, since7Days, until7Days),
+            fetchMetaAdsData(targetId, targetToken, sinceMonth, untilMonth),
             fetchCampaignsStatus(targetId, targetToken)
           ]);
           

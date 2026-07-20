@@ -265,6 +265,14 @@ export const generateSinglePeriodData = (processedData, labelText) => {
       cpl: { value: formatCurrency(processedData.cpl), subtitle: "CPL focado", details: labelText },
       ctr: { value: `${processedData.ctr.toFixed(2)}%`, subtitle: "CTR Geral", details: labelText }
     },
+    accumulatedCard: {
+      label: `RESUMO GERAL (${labelText.toUpperCase()})`,
+      spent: formatCurrency(processedData.invested),
+      leadsTotal: `${formatNumber(processedData.leads)} leads`,
+      leadsBreakdown: `(Alcance Histórico: ${formatNumber(processedData.reach)})`,
+      cpl: `CPL focado ${formatCurrency(processedData.cpl)}`,
+      freq: `freq. média ${(processedData.avgFreq).toFixed(2)}`
+    },
     funnel: {
       impressions: { value: formatNumber(processedData.funnelImpressions), label: "Impressões do Funil", details: "Apenas campanhas de Lead" },
       clicks: { value: formatNumber(processedData.funnelClicks), label: "Cliques no link", details: `CTR do funil ${processedData.funnelCtr.toFixed(2)}%` },

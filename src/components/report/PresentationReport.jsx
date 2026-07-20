@@ -1,23 +1,78 @@
 import React from 'react';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Target, TrendingUp, AlertTriangle, CheckCircle, Activity, Award, BarChart2, Zap } from 'lucide-react';
+import { Target, TrendingUp, AlertTriangle, CheckCircle, Activity, Award, BarChart2, Zap, Download } from 'lucide-react';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val || 0);
 
 // --- 1. CAPA / RESUMO EXECUTIVO ---
-const ExecutiveSummary = ({ summary, accountId, label }) => {
+const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
   const isHealthy = summary.health === 'BOM';
   const isCritical = summary.health === 'CRÍTICO';
   
+  const handleExportCSV = () => {
+    if (!campaigns || campaigns.length === 0) return;
+    
+    const headers = ['Campanha', 'Grupo/Objetivo', 'Status', 'Investimento (BRL)', 'Impressões', 'Cliques', 'Alcance', 'Frequência', 'CPC (BRL)', 'CPM (BRL)', 'CTR (%)', 'Resultados', 'Tipo de Resultado', 'CPA (BRL)'];
+    
+    const rows = campaigns.map(c => [
+      `"${c.name}"`,
+      `"${c.group}"`,
+      `"${c.status}"`,
+      c.spend.toFixed(2),
+      c.impressions,
+      c.clicks,
+      c.reach,
+      c.frequency.toFixed(2),
+      c.cpc.toFixed(2),
+      c.cpm.toFixed(2),
+      c.ctr.toFixed(2),
+      c.result,
+      `"${c.resultName}"`,
+      c.cpa.toFixed(2)
+    ].join(','));
+    
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    // Adicionar BOM para Excel abrir UTF-8 corretamente
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio_meta_ads_${accountId}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '2rem', marginBottom: '2rem', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: isHealthy ? 'var(--neon-green)' : (isCritical ? '#ff4444' : '#ffb020') }} />
-      <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', color: 'white' }}>Relatório de Performance</h1>
-      <div style={{ color: 'var(--text-muted)', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <span>CONTA: <strong>ACT_{accountId}</strong></span>
-        <span>•</span>
-        <span>PERÍODO: <strong>{label.toUpperCase()}</strong></span>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', color: 'white' }}>Relatório de Performance</h1>
+          <div style={{ color: 'var(--text-muted)', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span>CONTA: <strong>ACT_{accountId}</strong></span>
+            <span>•</span>
+            <span>PERÍODO: <strong>{label.toUpperCase()}</strong></span>
+          </div>
+        </div>
+        
+        <button 
+          onClick={handleExportCSV}
+          style={{
+            background: 'var(--neon-green)', color: 'var(--bg-dark)', border: 'none', borderRadius: '8px',
+            padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold',
+            cursor: 'pointer', transition: 'all 0.2s ease', outline: 'none'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <Download size={18} />
+          Exportar CSV
+        </button>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
@@ -367,7 +422,7 @@ export const PresentationReport = ({ currentData, previousData, accountId, label
 
   return (
     <div style={{ animation: 'fadeInUp 0.5s ease', width: '100%' }}>
-      <ExecutiveSummary summary={currentData.summary} accountId={accountId} label={label} />
+      <ExecutiveSummary summary={currentData.summary} accountId={accountId} label={label} campaigns={currentData.campaigns} />
       <AccountOverview objectives={currentData.objectives} summary={currentData.summary} />
       <ObjectiveBreakdown objectives={currentData.objectives} />
       <CampaignRanking campaigns={currentData.campaigns} />

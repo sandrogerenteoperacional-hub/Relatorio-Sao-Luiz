@@ -46,7 +46,7 @@ const ExecutiveSummary = ({ summary, accountId, label }) => {
 // --- 2. VISÃO GERAL DA CONTA ---
 const COLORS = ['var(--neon-green)', '#00e5ff', '#ffb020', '#ff4444', '#b020ff'];
 
-const AccountOverview = ({ objectives, summary }) => {
+const AccountOverview = ({ objectives }) => {
   const pieData = Object.values(objectives).map(obj => ({
     name: obj.name,
     value: obj.spend
@@ -54,56 +54,22 @@ const AccountOverview = ({ objectives, summary }) => {
 
   return (
     <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><BarChart2 /> Visão Geral de Resultados</h2>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start' }}>
-        
-        {/* Gráfico de Pizza (Distribuição de Verba) */}
-        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
-          <h3 style={{ color: 'var(--text-muted)', fontSize: '1rem', margin: '0 0 1rem 0' }}>Distribuição de Verba</h3>
-          <div style={{ width: '100%', height: '250px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip 
-                  formatter={(value) => formatCurrency(value)}
-                  contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} 
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Cards de Objetivos */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          {Object.values(objectives).map(obj => (
-            <div key={obj.name} className="card" style={{ padding: '1.5rem' }}>
-              <div style={{ color: 'var(--neon-green)', fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.1rem' }}>{obj.name}</div>
-              
-              <div style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.result)}</span>
-                <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>{obj.resultName}</span>
-              </div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginTop: '1rem' }}>
-                <div>
-                  <div style={{ color: 'var(--text-muted)' }}>Custo Médio</div>
-                  <div style={{ fontWeight: 'bold', color: 'white' }}>{formatCurrency(obj.cpa)}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: 'var(--text-muted)' }}>Investido</div>
-                  <div style={{ fontWeight: 'bold', color: 'white' }}>{formatCurrency(obj.spend)}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><BarChart2 /> Distribuição de Verba</h2>
+      <div className="card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'center', height: '350px' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={120} paddingAngle={5} dataKey="value" stroke="none">
+              {pieData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <RechartsTooltip 
+              formatter={(value) => formatCurrency(value)}
+              contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} 
+            />
+            <Legend verticalAlign="bottom" height={36} />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -147,6 +113,42 @@ const FunnelVisual = ({ label, value, topWidth, bottomWidth, color, delay, detai
 };
 
 const ObjectiveBreakdown = ({ objectives }) => {
+  const formatRate = (rate) => rate > 100 ? '>100%' : rate.toFixed(2) + '%';
+
+  const renderFunnel = (obj) => {
+    if (obj.name === 'Reconhecimento') {
+      return (
+        <>
+          <FunnelVisual topWidth={0} bottomWidth={20} value={obj.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
+          <FunnelVisual topWidth={20} bottomWidth={40} value={obj.reach} label="Pessoas Alcançadas" color="var(--neon-green)" delay={0.2} details={`Frequência: ${obj.avgFrequency.toFixed(2)}`} isLast={true} />
+        </>
+      );
+    }
+    
+    if (obj.name === 'Engajamento') {
+      const engConvRate = obj.funnel.linkClicks > 0 ? (obj.funnel.conversions / obj.funnel.linkClicks) * 100 : 0;
+      return (
+        <>
+          <FunnelVisual topWidth={0} bottomWidth={20} value={obj.funnel.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
+          <FunnelVisual topWidth={20} bottomWidth={40} value={obj.funnel.linkClicks} label="Cliques no link" color="var(--neon-green)" delay={0.2} details={`CTR ${formatRate(obj.funnel.ctr)}`} />
+          <FunnelVisual topWidth={40} bottomWidth={50} value={obj.funnel.conversions} label={obj.resultName} color="var(--neon-green-light)" delay={0.3} details={`Conversão: ${formatRate(engConvRate)}`} isLast={true} />
+        </>
+      );
+    }
+
+    // Default for Leads, Vendas, Tráfego
+    return (
+      <>
+        <FunnelVisual topWidth={0} bottomWidth={15} value={obj.funnel.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
+        <FunnelVisual topWidth={15} bottomWidth={30} value={obj.funnel.linkClicks} label="Cliques no link" color="var(--neon-green)" delay={0.2} details={`CTR ${formatRate(obj.funnel.ctr)}`} />
+        {obj.funnel.landingViews > 0 && (
+          <FunnelVisual topWidth={30} bottomWidth={42} value={obj.funnel.landingViews} label="Visitas landing" color="var(--neon-green)" delay={0.3} details={`${formatRate(obj.funnel.lpvRate)} dos cliques chegam`} />
+        )}
+        <FunnelVisual topWidth={obj.funnel.landingViews > 0 ? 42 : 30} bottomWidth={50} value={obj.funnel.conversions} label={obj.resultName} color="var(--neon-green-light)" delay={0.4} details={`Conversão: ${formatRate(obj.funnel.convRate)}`} isLast={true} />
+      </>
+    );
+  };
+
   return (
     <div style={{ marginBottom: '3rem' }}>
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><Target /> Análise de Funil por Objetivo</h2>
@@ -181,27 +183,7 @@ const ObjectiveBreakdown = ({ objectives }) => {
 
           {/* Micro-Funil Visual */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '2rem 1rem', borderRadius: '12px' }}>
-            
-            <FunnelVisual 
-              topWidth={0} bottomWidth={15} value={obj.funnel.impressions} 
-              label="Impressões" color="var(--neon-green)" delay={0.1}
-            />
-            <FunnelVisual 
-              topWidth={15} bottomWidth={30} value={obj.funnel.linkClicks} 
-              label="Cliques no link" color="var(--neon-green)" delay={0.2}
-              details={`CTR total ${obj.funnel.ctr.toFixed(2)}%`}
-            />
-            <FunnelVisual 
-              topWidth={30} bottomWidth={42} value={obj.funnel.landingViews} 
-              label="Visitas landing" color="var(--neon-green)" delay={0.3}
-              details={`${obj.funnel.lpvRate.toFixed(2)}% dos cliques chegam`}
-            />
-            <FunnelVisual 
-              topWidth={obj.funnel.landingViews === 0 ? 30 : 42} bottomWidth={50} value={obj.funnel.conversions} 
-              label={obj.resultName} color="var(--neon-green-light)" delay={0.4}
-              details={`Conversão: ${obj.funnel.convRate.toFixed(2)}%`}
-              isLast={true}
-            />
+            {renderFunnel(obj)}
           </div>
           
         </div>
@@ -267,25 +249,23 @@ const CampaignRanking = ({ campaigns }) => {
 const TrendGraph = ({ currentData, previousData }) => {
   if (!previousData || !currentData) return null;
 
-  // Build comparison data
-  const data = [];
+  const data = [
+    { name: 'Período Anterior' },
+    { name: 'Período Atual' }
+  ];
+  
   const groups = new Set([...Object.keys(currentData.objectives), ...Object.keys(previousData.objectives)]);
   
   groups.forEach(g => {
-    const curr = currentData.objectives[g];
     const prev = previousData.objectives[g];
-    if (curr || prev) {
-      data.push({
-        name: g,
-        Atual: curr ? curr.cpa : 0,
-        Anterior: prev ? prev.cpa : 0
-      });
-    }
+    const curr = currentData.objectives[g];
+    data[0][g] = prev && prev.cpa > 0 ? prev.cpa : null;
+    data[1][g] = curr && curr.cpa > 0 ? curr.cpa : null;
   });
 
   return (
     <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo (Atual vs Anterior)</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo de Aquisição (CPA)</h2>
       <div className="card" style={{ padding: '2rem', height: '400px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -298,8 +278,9 @@ const TrendGraph = ({ currentData, previousData }) => {
               formatter={(value) => formatCurrency(value)}
             />
             <Legend />
-            <Line type="monotone" dataKey="Atual" stroke="var(--neon-green)" strokeWidth={3} activeDot={{ r: 8 }} />
-            <Line type="monotone" dataKey="Anterior" stroke="#8884d8" strokeWidth={3} strokeDasharray="5 5" />
+            {Array.from(groups).map((g, i) => (
+              <Line key={g} type="monotone" dataKey={g} stroke={COLORS[i % COLORS.length]} strokeWidth={3} activeDot={{ r: 8 }} connectNulls={true} />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>

@@ -110,27 +110,31 @@ const AccountOverview = ({ objectives, summary }) => {
 };
 
 // --- 3. e 4. QUEBRA POR OBJETIVO E FUNIL ---
-const FunnelVisual = ({ label, value, topWidth, bottomWidth, color, delay }) => (
-  <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '4px', animation: `fadeInUp 0.6s ease ${delay}s both` }}>
-    <div style={{ width: '200px', height: '60px', position: 'relative' }}>
-      <div style={{
-        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', height: '100%', background: color,
-        clipPath: `polygon(${topWidth}% 0, ${100 - topWidth}% 0, ${100 - bottomWidth}% 100%, ${bottomWidth}% 100%)`
-      }} />
-      <div style={{
-        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--bg-dark)', zIndex: 2
-      }}>
-        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', lineHeight: '1' }}>{formatNumber(value)}</div>
+const FunnelVisual = ({ label, value, topWidth, bottomWidth, color, delay }) => {
+  if (value === '0' || value === 0) return null;
+
+  return (
+    <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '4px', animation: `fadeInUp 0.6s ease ${delay}s both` }}>
+      <div style={{ width: '60%', maxWidth: '500px', height: '90px', position: 'relative' }}>
+        <div style={{
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '100%', height: '100%', background: color,
+          clipPath: `polygon(${topWidth}% 0, ${100 - topWidth}% 0, ${100 - bottomWidth}% 100%, ${bottomWidth}% 100%)`
+        }} />
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--bg-dark)', zIndex: 2
+        }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 'bold', lineHeight: '1', marginTop: '5px' }}>{formatNumber(value)}</div>
+        </div>
+      </div>
+      <div style={{ position: 'absolute', right: '5%', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'right', width: '200px' }}>
+        {label}
       </div>
     </div>
-    <div style={{ position: 'absolute', right: '10%', top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'left', width: '150px' }}>
-      {label}
-    </div>
-  </div>
-);
+  );
+};
 
 const ObjectiveBreakdown = ({ objectives }) => {
   return (
@@ -166,24 +170,24 @@ const ObjectiveBreakdown = ({ objectives }) => {
           </div>
 
           {/* Micro-Funil Visual */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '2rem 1rem', borderRadius: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(0,0,0,0.3)', padding: '2rem 1rem', borderRadius: '12px' }}>
             <h4 style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '0 0 1.5rem 0' }}>Jornada do Usuário</h4>
             
             <FunnelVisual 
-              topWidth={0} bottomWidth={10} value={obj.funnel.impressions} 
-              label="Impressões" color="var(--neon-green)" delay={0.1} 
+              topWidth={0} bottomWidth={15} value={obj.funnel.impressions} 
+              label={<>Impressões</>} color="var(--neon-green)" delay={0.1} 
             />
             <FunnelVisual 
-              topWidth={10} bottomWidth={20} value={obj.funnel.linkClicks} 
-              label={`Cliques (${obj.funnel.ctr.toFixed(2)}%)`} color="var(--neon-green)" delay={0.2} 
+              topWidth={15} bottomWidth={30} value={obj.funnel.linkClicks} 
+              label={<>Cliques <span style={{ color: 'var(--neon-green)' }}>({obj.funnel.ctr.toFixed(2)}%)</span></>} color="var(--neon-green)" delay={0.2} 
             />
             <FunnelVisual 
-              topWidth={20} bottomWidth={30} value={obj.funnel.landingViews} 
-              label={`Visitas (${obj.funnel.lpvRate.toFixed(2)}%)`} color="var(--neon-green)" delay={0.3} 
+              topWidth={30} bottomWidth={42} value={obj.funnel.landingViews} 
+              label={<>Visitas <span style={{ color: 'var(--neon-green)' }}>({obj.funnel.lpvRate.toFixed(2)}%)</span></>} color="var(--neon-green)" delay={0.3} 
             />
             <FunnelVisual 
-              topWidth={30} bottomWidth={40} value={obj.funnel.conversions} 
-              label={`${obj.resultName} (${obj.funnel.convRate.toFixed(2)}%)`} color="var(--neon-green-light)" delay={0.4} 
+              topWidth={42} bottomWidth={50} value={obj.funnel.conversions} 
+              label={<strong style={{ color: 'var(--neon-green-light)' }}>{obj.resultName} ({obj.funnel.convRate.toFixed(2)}%)</strong>} color="var(--neon-green-light)" delay={0.4} 
             />
           </div>
           

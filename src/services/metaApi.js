@@ -3,7 +3,7 @@ export const fetchMetaAdsData = async (accountId, token, since, until) => {
   const params = new URLSearchParams({
     access_token: token,
     level: 'campaign',
-    fields: 'campaign_name,objective,spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,actions,cost_per_action_type,date_start,date_stop',
+    fields: 'campaign_name,objective,spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,actions,cost_per_action_type,conversions,outbound_clicks,date_start,date_stop',
     time_range: JSON.stringify({ since, until }),
     limit: 500
   });
@@ -166,12 +166,18 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     cpa = spend / result;
   }
 
+  const rawActionsStr = JSON.stringify({
+      actions: actions.map(a => `${a.action_type}:${a.value}`),
+      conversions: (row.conversions || []).map(a => `${a.action_type}:${a.value}`),
+      outbound_clicks: (row.outbound_clicks || []).map(a => `${a.action_type}:${a.value}`)
+    });
+
   return {
     result,
     resultName,
     cpa,
     isCpmBased,
-    rawActions: JSON.stringify(actions.map(a => `${a.action_type}:${a.value}`)),
+    rawActions: rawActionsStr,
     funnel: {
       impressions,
       linkClicks: funnelLinkClicks,

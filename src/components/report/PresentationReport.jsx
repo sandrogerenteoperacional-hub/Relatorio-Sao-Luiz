@@ -130,119 +130,43 @@ const AccountOverview = ({ objectives }) => {
   );
 };
 
-// --- 3. e 4. QUEBRA POR OBJETIVO E FUNIL ---
-const FunnelVisual = ({ label, value, topWidth, bottomWidth, color, delay, details, isLast }) => {
-  if (value === '0' || value === 0) return null;
-
-  return (
-    <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '2px', animation: `fadeInUp 0.6s ease ${delay}s both` }}>
-      <div style={{ width: '60%', height: '90px', position: 'relative' }}>
-        <div style={{
-          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-          width: '100%', height: '100%', background: color,
-          clipPath: `polygon(${topWidth}% 0, ${100 - topWidth}% 0, ${100 - bottomWidth}% 100%, ${bottomWidth}% 100%)`
-        }} />
-        <div style={{
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--bg-dark)', zIndex: 2
-        }}>
-          <div className="font-number" style={{ fontSize: '1.8rem', fontWeight: 'bold', lineHeight: '1', marginTop: '5px' }}>{formatNumber(value)}</div>
-          {!isLast && (
-            <div style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', opacity: 0.8, whiteSpace: 'nowrap' }}>
-              {label}
-            </div>
-          )}
-        </div>
-      </div>
-      <div style={{ position: 'absolute', right: '10%', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', width: '150px' }}>
-        {isLast && (
-          <div style={{ color: 'var(--neon-green-light)', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>
-            {label}
-          </div>
-        )}
-        {details}
-      </div>
-    </div>
-  );
-};
-
+// --- 3. QUEBRA POR OBJETIVO ---
 const ObjectiveBreakdown = ({ objectives }) => {
-  const formatRate = (rate) => rate > 100 ? '>100%' : rate.toFixed(2) + '%';
-
-  const renderFunnel = (obj) => {
-    if (obj.name === 'Reconhecimento') {
-      return (
-        <>
-          <FunnelVisual topWidth={0} bottomWidth={20} value={obj.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
-          <FunnelVisual topWidth={20} bottomWidth={40} value={obj.reach} label="Pessoas Alcançadas" color="var(--neon-green)" delay={0.2} details={`Frequência: ${obj.avgFrequency.toFixed(2)}`} isLast={true} />
-        </>
-      );
-    }
-    
-    if (obj.name === 'Engajamento') {
-      const engConvRate = obj.funnel.linkClicks > 0 ? (obj.funnel.conversions / obj.funnel.linkClicks) * 100 : 0;
-      return (
-        <>
-          <FunnelVisual topWidth={0} bottomWidth={20} value={obj.funnel.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
-          <FunnelVisual topWidth={20} bottomWidth={40} value={obj.funnel.linkClicks} label="Cliques no link" color="var(--neon-green)" delay={0.2} details={`CTR ${formatRate(obj.funnel.ctr)}`} />
-          <FunnelVisual topWidth={40} bottomWidth={50} value={obj.funnel.conversions} label={obj.resultName} color="var(--neon-green-light)" delay={0.3} details={`Conversão: ${formatRate(engConvRate)}`} isLast={true} />
-        </>
-      );
-    }
-
-    // Default for Leads, Vendas, Tráfego
-    const hasLanding = obj.funnel.landingViews > 0 && obj.resultName !== 'Visitas (LP)';
-    
-    return (
-      <>
-        <FunnelVisual topWidth={0} bottomWidth={15} value={obj.funnel.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
-        <FunnelVisual topWidth={15} bottomWidth={30} value={obj.funnel.linkClicks} label="Cliques no link" color="var(--neon-green)" delay={0.2} details={`CTR ${formatRate(obj.funnel.ctr)}`} />
-        {hasLanding && (
-          <FunnelVisual topWidth={30} bottomWidth={42} value={obj.funnel.landingViews} label="Visitas landing" color="var(--neon-green)" delay={0.3} details={`${formatRate(obj.funnel.lpvRate)} dos cliques chegam`} />
-        )}
-        <FunnelVisual topWidth={hasLanding ? 42 : 30} bottomWidth={50} value={obj.funnel.conversions} label={obj.resultName} color="var(--neon-green-light)" delay={0.4} details={`Conversão: ${formatRate(obj.funnel.convRate)}`} isLast={true} />
-      </>
-    );
-  };
-
   return (
     <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><Target /> Análise de Funil por Objetivo</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><Target /> Desempenho por Objetivo</h2>
       
       {Object.values(objectives).map(obj => (
         <div key={obj.name} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '2rem', marginBottom: '2rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--neon-green)' }}>{obj.name}</h3>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>{obj.campaignCount} campanhas ativas</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>{obj.campaignCount} campanha(s)</span>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Investimento</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(obj.spend)}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{formatCurrency(obj.spend)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{obj.isCpmBased ? 'Custo por 1.000 Alcançadas' : 'Custo por Resultado'}</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(obj.cpa)}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Resultados ({obj.resultName})</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.result)}</div>
+            </div>
+            <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{obj.isCpmBased ? 'Custo / 1.000 Alcançadas' : 'Custo por Resultado'}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(obj.cpa)}</div>
+            </div>
+            <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Impressões</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{formatNumber(obj.impressions)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>CTR Médio</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{obj.ctr.toFixed(2)}%</div>
-            </div>
-            <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Frequência</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{obj.avgFrequency.toFixed(2)}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{obj.ctr.toFixed(2)}%</div>
             </div>
           </div>
-
-          {/* Micro-Funil Visual */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '2rem 1rem', borderRadius: '12px' }}>
-            {renderFunnel(obj)}
-          </div>
-          
         </div>
       ))}
     </div>

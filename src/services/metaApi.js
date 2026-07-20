@@ -122,17 +122,19 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     const isProfile = nameLower.includes('ig') || nameLower.includes('perfil') || nameLower.includes('instagram');
     
     if (isProfile) {
-      let igVisits = getActionCount(actions, ['profile_visit', 'profile_view']);
-      let igCost = getActionCost(costs, ['profile_visit', 'profile_view']);
+      let igVisits = getActionCount(actions, ['profile_visit', 'profile_view', 'instagram_profile']);
+      let igCost = getActionCost(costs, ['profile_visit', 'profile_view', 'instagram_profile']);
       
       if (igVisits > 0) {
         result = igVisits;
         cpa = igCost > 0 ? igCost : (spend / igVisits);
+        resultName = 'Visitas (Perfil)';
       } else {
         result = funnelLinkClicks;
         cpa = getActionCost(costs, ['link_click']);
+        if (cpa === 0) cpa = spend / (result || 1);
+        resultName = 'Cliques no Link (Perfil)';
       }
-      resultName = 'Visitas ao Perfil';
       funnelLandingViews = 0; // Profile visits don't have landing pages
     } else {
       if (landingViews > 0) {

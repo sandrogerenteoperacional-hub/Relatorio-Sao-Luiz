@@ -168,7 +168,7 @@ const ObjectiveBreakdown = ({ objectives }) => {
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(obj.spend)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Custo por {obj.resultName}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{obj.isCpmBased ? 'Custo por 1.000 Alcançadas' : `Custo por ${obj.resultName}`}</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(obj.cpa)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
@@ -212,7 +212,7 @@ const CampaignRanking = ({ campaigns }) => {
               <th style={{ padding: '1rem' }}>Objetivo</th>
               <th style={{ padding: '1rem' }}>Investimento</th>
               <th style={{ padding: '1rem' }}>Resultados</th>
-              <th style={{ padding: '1rem' }}>Custo Médio</th>
+              <th style={{ padding: '1rem' }}>Custo p/ Res.</th>
               <th style={{ padding: '1rem' }}>CTR</th>
               <th style={{ padding: '1rem' }}>Status/Fadiga</th>
             </tr>

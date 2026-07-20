@@ -44,6 +44,17 @@ const getActionCount = (actions, actionTypes) => {
   return count;
 };
 
+// Extrator do custo gerado pela própria Meta API
+const getActionCost = (costs, actionTypes) => {
+  if (!costs || !Array.isArray(costs)) return 0;
+  for (const a of costs) {
+    if (actionTypes.includes(a.action_type)) {
+      return parseFloat(a.value || 0);
+    }
+  }
+  return 0;
+};
+
 // Classifica a campanha num Grupo de Objetivo Macro
 const getObjectiveGroup = (objective, name) => {
   const objLower = (objective || '').toLowerCase();
@@ -67,44 +78,83 @@ const getObjectiveGroup = (objective, name) => {
   return 'Outros';
 };
 
-// Retorna os dados do Funil e a métrica de "Resultado Principal" baseada no grupo
-const extractFunnelAndResults = (group, row, clicks, impressions, reach) => {
+// Retorna os dados do Funil, Resultado e CPA extraídos da API
+const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) => {
   const actions = row.actions || [];
+  const costs = row.cost_per_action_type || [];
   
-  const leads = getActionCount(actions, ['lead', 'onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d']);
-  const landingViews = getActionCount(actions, ['landing_page_view']);
-  const igVisits = getActionCount(actions, ['instagram_profile_visit', 'onsite_conversion.instagram_profile_visit']);
-  const purchases = getActionCount(actions, ['purchase', 'offsite_conversion.fb_pixel_purchase']);
   const linkClicks = getActionCount(actions, ['link_click']);
+  const landingViews = getActionCount(actions, ['landing_page_view']);
   
-  // Define o resultado principal
   let result = 0;
   let resultName = 'Resultados';
+  let cpa = 0;
+  let isCpmBased = false;
   
   if (group === 'Conversas & Leads') {
-    result = leads;
+    const types = ['lead', 'onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d'];
+    result = getActionCount(actions, types);
+    cpa = getActionCost(costs, types);
     resultName = 'Leads/Conversas';
   } else if (group === 'Vendas') {
-    result = purchases;
+    const types = ['purchase', 'offsite_conversion.fb_pixel_purchase'];
+    result = getActionCount(actions, types);
+    cpa = getActionCost(costs, types);
     resultName = 'Compras';
   } else if (group === 'Tráfego') {
-    result = landingViews > 0 ? landingViews : linkClicks;
-    resultName = landingViews > 0 ? 'Visitas (LP)' : 'Cliques no Link';
+    if (landingViews > 0) {
+      result = landingViews;
+      cpa = getActionCost(costs, ['landing_page_view']);
+      resultName = 'Visitas (LP)';
+    } else {
+      const igVisits = getActionCount(actions, ['instagram_profile_visit', 'onsite_conversion.instagram_profile_visit']);
+      if (igVisits > 0) {
+        result = igVisits;
+        cpa = getActionCost(costs, ['instagram_profile_visit', 'onsite_conversion.instagram_profile_visit']);
+        resultName = 'Visitas ao Perfil';
+      } else {
+        result = linkClicks > 0 ? linkClicks : clicks;
+        cpa = getActionCost(costs, ['link_click']);
+        resultName = 'Cliques no Link';
+      }
+    }
   } else if (group === 'Engajamento') {
-    result = igVisits > 0 ? igVisits : clicks;
-    resultName = igVisits > 0 ? 'Visitas ao Perfil' : 'Cliques/Engajamento';
+    const msgs = getActionCount(actions, ['onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d']);
+    if (msgs > 0) {
+      result = msgs;
+      cpa = getActionCost(costs, ['onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d']);
+      resultName = 'Conversas Iniciadas';
+    } else {
+      const postEng = getActionCount(actions, ['post_engagement', 'page_engagement', 'video_view']);
+      if (postEng > 0) {
+        result = postEng;
+        cpa = getActionCost(costs, ['post_engagement', 'page_engagement', 'video_view']);
+        resultName = 'Engajamentos';
+      } else {
+        result = clicks;
+        resultName = 'Cliques';
+      }
+    }
   } else if (group === 'Reconhecimento') {
     result = reach;
+    cpa = reach > 0 ? (spend / reach) * 1000 : 0;
     resultName = 'Pessoas Alcançadas';
+    isCpmBased = true;
   } else {
     result = clicks;
+    cpa = getActionCost(costs, ['link_click']);
     resultName = 'Cliques';
   }
 
-  // Funnel Data (Impressions -> Link Clicks -> Landing Page Views -> Final Conversion)
+  if (cpa === 0 && result > 0 && !isCpmBased) {
+    cpa = spend / result;
+  }
+
   return {
     result,
     resultName,
+    cpa,
+    isCpmBased,
     funnel: {
       impressions,
       linkClicks: linkClicks > 0 ? linkClicks : clicks,
@@ -155,8 +205,7 @@ export const processApiData = (insightsData, campaignsData) => {
     report.summary.totalReach += reach;
 
     const group = getObjectiveGroup(row.objective, name);
-    const { result, resultName, funnel } = extractFunnelAndResults(group, row, clicks, impressions, reach);
-    const cpa = result > 0 ? (spend / result) : 0;
+    const { result, resultName, cpa, isCpmBased, funnel } = extractFunnelAndResults(group, row, clicks, impressions, reach, spend);
     const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
 
     const campData = {
@@ -188,6 +237,7 @@ export const processApiData = (insightsData, campaignsData) => {
         spend: 0,
         result: 0,
         resultName,
+        isCpmBased,
         impressions: 0,
         clicks: 0,
         reach: 0,
@@ -218,7 +268,12 @@ export const processApiData = (insightsData, campaignsData) => {
 
   // Calculate averages for objectives
   Object.values(report.objectives).forEach(obj => {
-    obj.cpa = obj.result > 0 ? (obj.spend / obj.result) : 0;
+    if (obj.isCpmBased) {
+      obj.cpa = obj.reach > 0 ? (obj.spend / obj.reach) * 1000 : 0;
+    } else {
+      obj.cpa = obj.result > 0 ? (obj.spend / obj.result) : 0;
+    }
+    
     obj.ctr = obj.impressions > 0 ? (obj.clicks / obj.impressions) * 100 : 0;
     obj.avgFrequency = obj.frequencyCount > 0 ? (obj.frequencySum / obj.frequencyCount) : 1;
     

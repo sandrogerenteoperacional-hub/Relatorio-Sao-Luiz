@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Target, TrendingUp, AlertTriangle, CheckCircle, Activity, Award, BarChart2, Zap } from 'lucide-react';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
@@ -44,38 +44,94 @@ const ExecutiveSummary = ({ summary, accountId, label }) => {
 };
 
 // --- 2. VISÃO GERAL DA CONTA ---
+const COLORS = ['var(--neon-green)', '#00e5ff', '#ffb020', '#ff4444', '#b020ff'];
+
 const AccountOverview = ({ objectives, summary }) => {
+  const pieData = Object.values(objectives).map(obj => ({
+    name: obj.name,
+    value: obj.spend
+  }));
+
   return (
     <div style={{ marginBottom: '3rem' }}>
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><BarChart2 /> Visão Geral de Resultados</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-        {Object.values(objectives).map(obj => (
-          <div key={obj.name} className="card" style={{ padding: '1.5rem' }}>
-            <div style={{ color: 'var(--neon-green)', fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.1rem' }}>{obj.name}</div>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.result)}</span>
-              <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>{obj.resultName}</span>
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginTop: '1rem' }}>
-              <div>
-                <div style={{ color: 'var(--text-muted)' }}>Custo Médio</div>
-                <div style={{ fontWeight: 'bold', color: 'white' }}>{formatCurrency(obj.cpa)}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ color: 'var(--text-muted)' }}>Investido</div>
-                <div style={{ fontWeight: 'bold', color: 'white' }}>{formatCurrency(obj.spend)}</div>
-              </div>
-            </div>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start' }}>
+        
+        {/* Gráfico de Pizza (Distribuição de Verba) */}
+        <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
+          <h3 style={{ color: 'var(--text-muted)', fontSize: '1rem', margin: '0 0 1rem 0' }}>Distribuição de Verba</h3>
+          <div style={{ width: '100%', height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip 
+                  formatter={(value) => formatCurrency(value)}
+                  contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} 
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        ))}
+        </div>
+
+        {/* Cards de Objetivos */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+          {Object.values(objectives).map(obj => (
+            <div key={obj.name} className="card" style={{ padding: '1.5rem' }}>
+              <div style={{ color: 'var(--neon-green)', fontWeight: 'bold', marginBottom: '1rem', fontSize: '1.1rem' }}>{obj.name}</div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.result)}</span>
+                <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>{obj.resultName}</span>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginTop: '1rem' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)' }}>Custo Médio</div>
+                  <div style={{ fontWeight: 'bold', color: 'white' }}>{formatCurrency(obj.cpa)}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ color: 'var(--text-muted)' }}>Investido</div>
+                  <div style={{ fontWeight: 'bold', color: 'white' }}>{formatCurrency(obj.spend)}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
       </div>
     </div>
   );
 };
 
 // --- 3. e 4. QUEBRA POR OBJETIVO E FUNIL ---
+const FunnelVisual = ({ label, value, topWidth, bottomWidth, color, delay }) => (
+  <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '4px', animation: `fadeInUp 0.6s ease ${delay}s both` }}>
+    <div style={{ width: '200px', height: '60px', position: 'relative' }}>
+      <div style={{
+        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', height: '100%', background: color,
+        clipPath: `polygon(${topWidth}% 0, ${100 - topWidth}% 0, ${100 - bottomWidth}% 100%, ${bottomWidth}% 100%)`
+      }} />
+      <div style={{
+        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--bg-dark)', zIndex: 2
+      }}>
+        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', lineHeight: '1' }}>{formatNumber(value)}</div>
+      </div>
+    </div>
+    <div style={{ position: 'absolute', right: '10%', top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'left', width: '150px' }}>
+      {label}
+    </div>
+  </div>
+);
+
 const ObjectiveBreakdown = ({ objectives }) => {
   return (
     <div style={{ marginBottom: '3rem' }}>
@@ -109,28 +165,26 @@ const ObjectiveBreakdown = ({ objectives }) => {
             </div>
           </div>
 
-          {/* Micro-Funil Específico */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Jornada do Usuário ({obj.name})</div>
+          {/* Micro-Funil Visual */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '2rem 1rem', borderRadius: '12px' }}>
+            <h4 style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '0 0 1.5rem 0' }}>Jornada do Usuário</h4>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '8px' }}>
-              <div style={{ textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.funnel.impressions)}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Impressões</div>
-              </div>
-              <div style={{ textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.funnel.linkClicks)}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cliques <span style={{ color: 'var(--neon-green)' }}>({obj.funnel.ctr.toFixed(2)}%)</span></div>
-              </div>
-              <div style={{ textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.funnel.landingViews)}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Visitas <span style={{ color: 'var(--neon-green)' }}>({obj.funnel.lpvRate.toFixed(2)}%)</span></div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatNumber(obj.funnel.conversions)}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{obj.resultName} <span style={{ color: 'var(--neon-green)' }}>({obj.funnel.convRate.toFixed(2)}%)</span></div>
-              </div>
-            </div>
+            <FunnelVisual 
+              topWidth={0} bottomWidth={10} value={obj.funnel.impressions} 
+              label="Impressões" color="var(--neon-green)" delay={0.1} 
+            />
+            <FunnelVisual 
+              topWidth={10} bottomWidth={20} value={obj.funnel.linkClicks} 
+              label={`Cliques (${obj.funnel.ctr.toFixed(2)}%)`} color="var(--neon-green)" delay={0.2} 
+            />
+            <FunnelVisual 
+              topWidth={20} bottomWidth={30} value={obj.funnel.landingViews} 
+              label={`Visitas (${obj.funnel.lpvRate.toFixed(2)}%)`} color="var(--neon-green)" delay={0.3} 
+            />
+            <FunnelVisual 
+              topWidth={30} bottomWidth={40} value={obj.funnel.conversions} 
+              label={`${obj.resultName} (${obj.funnel.convRate.toFixed(2)}%)`} color="var(--neon-green-light)" delay={0.4} 
+            />
           </div>
           
         </div>

@@ -17,8 +17,9 @@ function App() {
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState('');
   
-  const [accountId, setAccountId] = useState(localStorage.getItem('metaAccountId') || '');
-  const [token, setToken] = useState(localStorage.getItem('metaToken') || '');
+  // Tenta pegar do localStorage primeiro, se não tiver, pega da variável de ambiente (Vercel)
+  const [accountId, setAccountId] = useState(localStorage.getItem('metaAccountId') || import.meta.env.VITE_META_ACCOUNT_ID || '');
+  const [token, setToken] = useState(localStorage.getItem('metaToken') || import.meta.env.VITE_META_TOKEN || '');
 
   const saveSettings = (id, tok) => {
     localStorage.setItem('metaAccountId', id);

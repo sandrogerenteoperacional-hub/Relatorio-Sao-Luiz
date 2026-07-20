@@ -102,20 +102,29 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     cpa = getActionCost(costs, types);
     resultName = 'Compras';
   } else if (group === 'Tráfego') {
-    // Prioridade absoluta para Visitas ao Perfil conforme pedido
-    const igVisits = getActionCount(actions, ['instagram_profile_visit']);
-    if (igVisits > 0) {
-      result = igVisits;
-      cpa = getActionCost(costs, ['instagram_profile_visit']);
+    const nameLower = (row.campaign_name || '').toLowerCase();
+    const isProfile = nameLower.includes('ig') || nameLower.includes('perfil') || nameLower.includes('instagram');
+    
+    if (isProfile) {
+      const igVisits = getActionCount(actions, ['instagram_profile_visit']);
+      if (igVisits > 0) {
+        result = igVisits;
+        cpa = getActionCost(costs, ['instagram_profile_visit']);
+      } else {
+        result = linkClicks > 0 ? linkClicks : clicks;
+        cpa = getActionCost(costs, ['link_click']);
+      }
       resultName = 'Visitas ao Perfil';
-    } else if (landingViews > 0) {
-      result = landingViews;
-      cpa = getActionCost(costs, ['landing_page_view']);
-      resultName = 'Visitas (LP)';
     } else {
-      result = linkClicks > 0 ? linkClicks : clicks;
-      cpa = getActionCost(costs, ['link_click']);
-      resultName = 'Cliques no Link';
+      if (landingViews > 0) {
+        result = landingViews;
+        cpa = getActionCost(costs, ['landing_page_view']);
+        resultName = 'Visitas (LP)';
+      } else {
+        result = linkClicks > 0 ? linkClicks : clicks;
+        cpa = getActionCost(costs, ['link_click']);
+        resultName = 'Cliques no Link';
+      }
     }
   } else if (group === 'Engajamento') {
     // Sem fallback para post_engagement: Engajamento = Conversas Iniciadas

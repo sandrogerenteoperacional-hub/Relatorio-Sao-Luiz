@@ -223,7 +223,7 @@ const ObjectiveBreakdown = ({ objectives }) => {
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(obj.spend)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{obj.isCpmBased ? 'Custo por 1.000 Alcançadas' : `Custo por ${obj.resultName}`}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{obj.isCpmBased ? 'Custo por 1.000 Alcançadas' : 'Custo por Resultado'}</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(obj.cpa)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>

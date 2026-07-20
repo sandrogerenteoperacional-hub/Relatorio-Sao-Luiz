@@ -32,12 +32,12 @@ export const fetchCampaignsStatus = async (accountId, token) => {
   return data.data || [];
 };
 
-// Extrator flexível de ações específicas
+// Extrator flexível de ações específicas (busca por substring para evitar problemas com prefixos/sufixos do Meta)
 const getActionCount = (actions, actionTypes) => {
   if (!actions || !Array.isArray(actions)) return 0;
   let count = 0;
   for (const a of actions) {
-    if (actionTypes.includes(a.action_type)) {
+    if (actionTypes.some(type => a.action_type.includes(type))) {
       count += parseFloat(a.value || 0);
     }
   }
@@ -48,7 +48,7 @@ const getActionCount = (actions, actionTypes) => {
 const getActionCost = (costs, actionTypes) => {
   if (!costs || !Array.isArray(costs)) return 0;
   for (const a of costs) {
-    if (actionTypes.includes(a.action_type)) {
+    if (actionTypes.some(type => a.action_type.includes(type))) {
       return parseFloat(a.value || 0);
     }
   }
@@ -92,49 +92,37 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
   let isCpmBased = false;
   
   if (group === 'Conversas & Leads') {
-    const types = ['lead', 'onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d'];
+    const types = ['lead', 'messaging_conversation_started'];
     result = getActionCount(actions, types);
     cpa = getActionCost(costs, types);
     resultName = 'Leads/Conversas';
   } else if (group === 'Vendas') {
-    const types = ['purchase', 'offsite_conversion.fb_pixel_purchase'];
+    const types = ['purchase'];
     result = getActionCount(actions, types);
     cpa = getActionCost(costs, types);
     resultName = 'Compras';
   } else if (group === 'Tráfego') {
-    if (landingViews > 0) {
+    // Prioridade absoluta para Visitas ao Perfil conforme pedido
+    const igVisits = getActionCount(actions, ['instagram_profile_visit']);
+    if (igVisits > 0) {
+      result = igVisits;
+      cpa = getActionCost(costs, ['instagram_profile_visit']);
+      resultName = 'Visitas ao Perfil';
+    } else if (landingViews > 0) {
       result = landingViews;
       cpa = getActionCost(costs, ['landing_page_view']);
       resultName = 'Visitas (LP)';
     } else {
-      const igVisits = getActionCount(actions, ['instagram_profile_visit', 'onsite_conversion.instagram_profile_visit']);
-      if (igVisits > 0) {
-        result = igVisits;
-        cpa = getActionCost(costs, ['instagram_profile_visit', 'onsite_conversion.instagram_profile_visit']);
-        resultName = 'Visitas ao Perfil';
-      } else {
-        result = linkClicks > 0 ? linkClicks : clicks;
-        cpa = getActionCost(costs, ['link_click']);
-        resultName = 'Cliques no Link';
-      }
+      result = linkClicks > 0 ? linkClicks : clicks;
+      cpa = getActionCost(costs, ['link_click']);
+      resultName = 'Cliques no Link';
     }
   } else if (group === 'Engajamento') {
-    const msgs = getActionCount(actions, ['onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d']);
-    if (msgs > 0) {
-      result = msgs;
-      cpa = getActionCost(costs, ['onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d']);
-      resultName = 'Conversas Iniciadas';
-    } else {
-      const postEng = getActionCount(actions, ['post_engagement', 'page_engagement', 'video_view']);
-      if (postEng > 0) {
-        result = postEng;
-        cpa = getActionCost(costs, ['post_engagement', 'page_engagement', 'video_view']);
-        resultName = 'Engajamentos';
-      } else {
-        result = clicks;
-        resultName = 'Cliques';
-      }
-    }
+    // Sem fallback para post_engagement: Engajamento = Conversas Iniciadas
+    const types = ['messaging_conversation_started'];
+    result = getActionCount(actions, types);
+    cpa = getActionCost(costs, types);
+    resultName = 'Conversas Iniciadas';
   } else if (group === 'Reconhecimento') {
     result = reach;
     cpa = reach > 0 ? (spend / reach) * 1000 : 0;

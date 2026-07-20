@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import './Tabs.css';
-import TopStats from './components/TopStats';
-import FunnelChart from './components/FunnelChart';
-import ActiveCampaigns from './components/ActiveCampaigns';
-import InsightsBoard from './components/InsightsBoard';
-import EfficiencyRanking from './components/EfficiencyRanking';
 import Settings from './components/Settings';
 import CustomDateFilter from './components/CustomDateFilter';
-import { fetchMetaAdsData, fetchCampaignsStatus, processApiData, generateDashboardData, generateSinglePeriodData } from './services/metaApi';
-import { RefreshCw, BarChart2, Settings as SettingsIcon } from 'lucide-react';
+import { PresentationReport } from './components/report/PresentationReport';
+import { fetchMetaAdsData, fetchCampaignsStatus, processApiData } from './services/metaApi';
+import { RefreshCw, Settings as SettingsIcon } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
+  
   const [customData, setCustomData] = useState(null);
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState('');
@@ -33,31 +30,63 @@ function App() {
   const getDates = () => {
     const today = new Date();
     
-    // For Month (Este Mês), we include today
+    // Este Mês
     const untilMonth = today.toISOString().split('T')[0];
     const sinceMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
     
-    // For 7 Days (Últimos 7 dias), Facebook excludes today by default
+    // Este Mês Anterior (Mês Passado equivalente aos dias passados do mês atual)
+    const prevMonthSince = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0];
+    const prevMonthUntil = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate()).toISOString().split('T')[0];
+
+    // Últimos 7 dias
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
     const until7Days = yesterday.toISOString().split('T')[0];
-    
     const sevenDaysAgo = new Date(yesterday);
-    sevenDaysAgo.setDate(yesterday.getDate() - 6); // 6 days before yesterday = 7 days total (e.g. 13 to 19)
+    sevenDaysAgo.setDate(yesterday.getDate() - 6);
     const since7Days = sevenDaysAgo.toISOString().split('T')[0];
-    
-    // For 30 Days (Últimos 30 dias), excludes today
+
+    // Anteriores 7 dias
+    const prev7Until = new Date(sevenDaysAgo);
+    prev7Until.setDate(sevenDaysAgo.getDate() - 1);
+    const prev7Since = new Date(prev7Until);
+    prev7Since.setDate(prev7Until.getDate() - 6);
+
+    // Últimos 30 dias
     const thirtyDaysAgo = new Date(yesterday);
     thirtyDaysAgo.setDate(yesterday.getDate() - 29);
     const since30Days = thirtyDaysAgo.toISOString().split('T')[0];
-    
-    // For Last Month (Mês Passado), complete month
+
+    // Anteriores 30 dias
+    const prev30Until = new Date(thirtyDaysAgo);
+    prev30Until.setDate(thirtyDaysAgo.getDate() - 1);
+    const prev30Since = new Date(prev30Until);
+    prev30Since.setDate(prev30Until.getDate() - 29);
+
+    // Mês Passado Completo
     const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
     const sinceLastMonth = firstDayLastMonth.toISOString().split('T')[0];
     const untilLastMonth = lastDayLastMonth.toISOString().split('T')[0];
-    
-    return { since7Days, until7Days, since30Days, until30Days: until7Days, sinceMonth, untilMonth, sinceLastMonth, untilLastMonth };
+
+    // Mês Retrasado Completo (Para comparação do mês passado)
+    const firstDayPrevLastMonth = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    const lastDayPrevLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 0);
+
+    return { 
+      current: {
+        since7Days, until7Days, 
+        since30Days, until30Days: until7Days, 
+        sinceMonth, untilMonth, 
+        sinceLastMonth, untilLastMonth
+      },
+      previous: {
+        since7Days: prev7Since.toISOString().split('T')[0], until7Days: prev7Until.toISOString().split('T')[0],
+        since30Days: prev30Since.toISOString().split('T')[0], until30Days: prev30Until.toISOString().split('T')[0],
+        sinceMonth: prevMonthSince, untilMonth: prevMonthUntil,
+        sinceLastMonth: firstDayPrevLastMonth.toISOString().split('T')[0], untilLastMonth: lastDayPrevLastMonth.toISOString().split('T')[0]
+      }
+    };
   };
 
   const loadData = async (forceApi = false, overrideId = null, overrideToken = null) => {
@@ -68,32 +97,41 @@ function App() {
       const targetId = overrideId || accountId;
       const targetToken = overrideToken || token;
 
-      // Try Meta API first if we have credentials
       if (targetId && targetToken) {
         try {
-          const { since7Days, until7Days, since30Days, until30Days, sinceMonth, untilMonth, sinceLastMonth, untilLastMonth } = getDates();
+          const dates = getDates();
+          const { current: c, previous: p } = dates;
           
-          console.log("Fetching from Meta API...");
-          const [insights7Days, insights30Days, insightsMonth, insightsLastMonth, campaignsStatus] = await Promise.all([
-            fetchMetaAdsData(targetId, targetToken, since7Days, until7Days),
-            fetchMetaAdsData(targetId, targetToken, since30Days, until30Days),
-            fetchMetaAdsData(targetId, targetToken, sinceMonth, untilMonth),
-            fetchMetaAdsData(targetId, targetToken, sinceLastMonth, untilLastMonth),
-            fetchCampaignsStatus(targetId, targetToken)
+          console.log("Fetching current and previous periods from Meta API...");
+          
+          // Precisamos do status das campanhas primeiro para cruzar depois
+          const campaignsStatus = await fetchCampaignsStatus(targetId, targetToken);
+
+          // Buscar tudo paralelamente para ser rápido
+          const results = await Promise.all([
+            fetchMetaAdsData(targetId, targetToken, c.since7Days, c.until7Days),
+            fetchMetaAdsData(targetId, targetToken, c.since30Days, c.until30Days),
+            fetchMetaAdsData(targetId, targetToken, c.sinceMonth, c.untilMonth),
+            fetchMetaAdsData(targetId, targetToken, c.sinceLastMonth, c.untilLastMonth),
+            
+            fetchMetaAdsData(targetId, targetToken, p.since7Days, p.until7Days),
+            fetchMetaAdsData(targetId, targetToken, p.since30Days, p.until30Days),
+            fetchMetaAdsData(targetId, targetToken, p.sinceMonth, p.untilMonth),
+            fetchMetaAdsData(targetId, targetToken, p.sinceLastMonth, p.untilLastMonth)
           ]);
           
-          const processed7Days = processApiData(insights7Days, campaignsStatus);
-          const processed30Days = processApiData(insights30Days, campaignsStatus);
-          const processedMonth = processApiData(insightsMonth, campaignsStatus);
-          const processedLastMonth = processApiData(insightsLastMonth, campaignsStatus);
-          
-          const finalData = generateDashboardData(processed7Days, processedMonth);
-          finalData.data30Days = generateSinglePeriodData(processed30Days, '30 Dias');
-          finalData.dataLastMonth = generateSinglePeriodData(processedLastMonth, 'Mês Passado');
+          const process = (raw) => processApiData(raw, campaignsStatus);
+
+          const finalData = {
+            data7Days: { current: process(results[0]), previous: process(results[4]) },
+            data30Days: { current: process(results[1]), previous: process(results[5]) },
+            dataMonth: { current: process(results[2]), previous: process(results[6]) },
+            dataLastMonth: { current: process(results[3]), previous: process(results[7]) }
+          };
           
           setData(finalData);
           setLoading(false);
-          setActiveTab(0); // Go back to dashboard if sync successful
+          setActiveTab(0);
           return;
         } catch (apiError) {
           console.error("Erro API Meta:", apiError);
@@ -102,7 +140,6 @@ function App() {
             setLoading(false);
             return;
           }
-          // If auto-loading failed, we will fallback to CSV below
         }
       }
 
@@ -112,7 +149,7 @@ function App() {
       
     } catch (error) {
       console.error("Erro geral:", error);
-      setErrorMsg("Nenhum dado encontrado. Configure a API do Meta ou certifique-se de que o CSV foi processado.");
+      setErrorMsg(error.message || "Erro desconhecido.");
     } finally {
       setLoading(false);
     }
@@ -135,18 +172,12 @@ function App() {
     try {
       setCustomLoading(true);
       setCustomError('');
-      const [insights, campaignsStatus] = await Promise.all([
-        fetchMetaAdsData(accountId, token, startDate, endDate),
-        fetchCampaignsStatus(accountId, token)
-      ]);
-      const processed = processApiData(insights, campaignsStatus);
       
-      const partsStart = startDate.split('-');
-      const partsEnd = endDate.split('-');
-      const label = `${partsStart[2]}/${partsStart[1]} a ${partsEnd[2]}/${partsEnd[1]}`;
+      const campaignsStatus = await fetchCampaignsStatus(accountId, token);
+      const raw = await fetchMetaAdsData(accountId, token, startDate, endDate);
+      const processed = processApiData(raw, campaignsStatus);
       
-      const singleData = generateSinglePeriodData(processed, label);
-      setCustomData({ ...singleData, processed });
+      setCustomData({ current: processed, previous: null });
     } catch (err) {
       setCustomError(err.message || 'Erro ao buscar período personalizado.');
     } finally {
@@ -157,20 +188,14 @@ function App() {
   if (loading && !data) {
     return <div style={{ color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', flexDirection: 'column', gap: '1rem' }}>
       <div className="spinner" style={{ width: '40px', height: '40px', border: '4px solid rgba(0,255,136,0.2)', borderTopColor: 'var(--neon-green)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-      <div>{accountId && token ? 'Sincronizando com a Meta Ads API...' : 'Carregando dados...'}</div>
+      <div>{accountId && token ? 'Construindo Apresentação Executiva...' : 'Carregando...'}</div>
       <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
     </div>;
   }
 
   return (
     <div className="app-container">
-      <header className="section-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ textAlign: 'left' }}>
-          <div className="section-subtitle">
-            {accountId ? `CONTA ACT_${accountId} • REDE SÃO LUIZ` : 'REDE SÃO LUIZ'}
-          </div>
-          <div className="section-title">Dashboard Inteligente</div>
-        </div>
+      <header className="section-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <button 
           onClick={() => loadData(!!token)}
           style={{
@@ -189,7 +214,7 @@ function App() {
           onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
           onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
         >
-          <RefreshCw size={18} /> Recarregar Dados
+          <RefreshCw size={18} /> Recarregar API
         </button>
       </header>
 
@@ -199,24 +224,12 @@ function App() {
         </div>
       )}
 
-      {/* Resumo Executivo */}
-      {data && activeTab !== 6 && activeTab !== 5 && (
-        <div style={{ background: 'rgba(0, 255, 136, 0.05)', border: '1px solid rgba(0, 255, 136, 0.2)', padding: '1.2rem', borderRadius: '12px', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ padding: '10px', background: 'rgba(0, 255, 136, 0.1)', borderRadius: '50%' }}>
-            <BarChart2 color="var(--neon-green)" />
-          </div>
-          <div style={{ color: 'var(--text-main)', fontSize: '1rem', lineHeight: '1.5' }}>
-            <strong style={{ color: 'var(--neon-green)' }}>Resumo Executivo:</strong> {data.summary}
-          </div>
-        </div>
-      )}
-
       <div className="tabs-container">
         <button className={`tab-button ${activeTab === 0 ? 'active' : ''}`} onClick={() => setActiveTab(0)}>7 Dias</button>
         <button className={`tab-button ${activeTab === 1 ? 'active' : ''}`} onClick={() => setActiveTab(1)}>30 Dias</button>
         <button className={`tab-button ${activeTab === 2 ? 'active' : ''}`} onClick={() => setActiveTab(2)}>Este Mês</button>
         <button className={`tab-button ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>Mês Passado</button>
-        <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}>Campanhas</button>
+        <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)} style={{display: 'none'}}>Campanhas</button>
         <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}>Personalizado</button>
         <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
@@ -229,86 +242,20 @@ function App() {
          </div>
       )}
 
-      {data && activeTab === 0 && (
-        <>
-          <TopStats data={data.topStats} />
-          <FunnelChart data={data.funnel} />
-        </>
-      )}
-
-      {data && activeTab === 1 && (
-        <>
-          <TopStats data={data.data30Days.topStats} />
-          <div className="card accumulated-card" style={{ animationDelay: '0.3s' }}>
-            <div className="accumulated-label">{data.data30Days.accumulatedCard?.label || 'RESUMO'}</div>
-            <div className="accumulated-data">
-              <div><span className="highlight-green">💳 {data.data30Days.accumulatedCard?.spent}</span></div>
-              <div><span className="highlight-white">👥 {data.data30Days.accumulatedCard?.leadsTotal}</span> {data.data30Days.accumulatedCard?.leadsBreakdown}</div>
-              <div><span className="highlight-yellow">🎯 {data.data30Days.accumulatedCard?.cpl}</span></div>
-              <div><span className="highlight-white">🔄 {data.data30Days.accumulatedCard?.freq}</span></div>
-            </div>
-          </div>
-          <FunnelChart data={data.data30Days.funnel} />
-        </>
-      )}
-
-      {data && activeTab === 2 && (
-        <>
-          <TopStats data={data.topStatsAcc} />
-          <div className="card accumulated-card" style={{ animationDelay: '0.3s' }}>
-            <div className="accumulated-label">{data.accumulatedCard?.label || 'RESUMO GERAL'}</div>
-            <div className="accumulated-data">
-              <div><span className="highlight-green">💳 {data.accumulatedCard?.spent}</span></div>
-              <div><span className="highlight-white">👥 {data.accumulatedCard?.leadsTotal}</span> {data.accumulatedCard?.leadsBreakdown}</div>
-              <div><span className="highlight-yellow">🎯 {data.accumulatedCard?.cpl}</span></div>
-              <div><span className="highlight-white">🔄 {data.accumulatedCard?.freq}</span></div>
-            </div>
-          </div>
-          <FunnelChart data={data.funnelAcc} />
-        </>
-      )}
-
-      {data && activeTab === 3 && (
-        <>
-          <TopStats data={data.dataLastMonth.topStats} />
-          <div className="card accumulated-card" style={{ animationDelay: '0.3s' }}>
-            <div className="accumulated-label">{data.dataLastMonth.accumulatedCard?.label || 'RESUMO'}</div>
-            <div className="accumulated-data">
-              <div><span className="highlight-green">💳 {data.dataLastMonth.accumulatedCard?.spent}</span></div>
-              <div><span className="highlight-white">👥 {data.dataLastMonth.accumulatedCard?.leadsTotal}</span> {data.dataLastMonth.accumulatedCard?.leadsBreakdown}</div>
-              <div><span className="highlight-yellow">🎯 {data.dataLastMonth.accumulatedCard?.cpl}</span></div>
-              <div><span className="highlight-white">🔄 {data.dataLastMonth.accumulatedCard?.freq}</span></div>
-            </div>
-          </div>
-          <FunnelChart data={data.dataLastMonth.funnel} />
-        </>
-      )}
-
-      {data && activeTab === 4 && (
-        <>
-          <InsightsBoard alerts={data.alerts} />
-          <ActiveCampaigns campaigns={data.activeCampaigns} pausedCount={data.pausedZeroSpendCount || 0} />
-          <EfficiencyRanking campaigns={data.activeCampaigns} />
-        </>
-      )}
+      {data && activeTab === 0 && <PresentationReport accountId={accountId} label="Últimos 7 Dias" currentData={data.data7Days.current} previousData={data.data7Days.previous} />}
+      {data && activeTab === 1 && <PresentationReport accountId={accountId} label="Últimos 30 Dias" currentData={data.data30Days.current} previousData={data.data30Days.previous} />}
+      {data && activeTab === 2 && <PresentationReport accountId={accountId} label="Este Mês (Atual)" currentData={data.dataMonth.current} previousData={data.dataMonth.previous} />}
+      {data && activeTab === 3 && <PresentationReport accountId={accountId} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} />}
 
       {activeTab === 5 && (
         <div>
           <CustomDateFilter onSearch={loadCustomData} isSearching={customLoading} />
-          
           {customError && (
              <div style={{ background: 'rgba(255, 50, 50, 0.1)', border: '1px solid rgba(255, 50, 50, 0.3)', padding: '1rem', borderRadius: '8px', color: '#ffaaaa', marginBottom: '1rem', textAlign: 'center' }}>
               ⚠️ {customError}
             </div>
           )}
-
-          {customData && (
-            <>
-              <TopStats data={customData.topStats} />
-              <FunnelChart data={customData.funnel} />
-            </>
-          )}
-          
+          {customData && <PresentationReport accountId={accountId} label="Período Personalizado" currentData={customData.current} previousData={null} />}
           {!customData && !customLoading && !customError && (
              <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>
                Selecione um período acima para consultar o Meta Ads.

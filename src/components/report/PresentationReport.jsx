@@ -192,14 +192,16 @@ const ObjectiveBreakdown = ({ objectives }) => {
     }
 
     // Default for Leads, Vendas, Tráfego
+    const hasLanding = obj.funnel.landingViews > 0 && obj.resultName !== 'Visitas (LP)';
+    
     return (
       <>
         <FunnelVisual topWidth={0} bottomWidth={15} value={obj.funnel.impressions} label="Impressões" color="var(--neon-green)" delay={0.1} />
         <FunnelVisual topWidth={15} bottomWidth={30} value={obj.funnel.linkClicks} label="Cliques no link" color="var(--neon-green)" delay={0.2} details={`CTR ${formatRate(obj.funnel.ctr)}`} />
-        {obj.funnel.landingViews > 0 && (
+        {hasLanding && (
           <FunnelVisual topWidth={30} bottomWidth={42} value={obj.funnel.landingViews} label="Visitas landing" color="var(--neon-green)" delay={0.3} details={`${formatRate(obj.funnel.lpvRate)} dos cliques chegam`} />
         )}
-        <FunnelVisual topWidth={obj.funnel.landingViews > 0 ? 42 : 30} bottomWidth={50} value={obj.funnel.conversions} label={obj.resultName} color="var(--neon-green-light)" delay={0.4} details={`Conversão: ${formatRate(obj.funnel.convRate)}`} isLast={true} />
+        <FunnelVisual topWidth={hasLanding ? 42 : 30} bottomWidth={50} value={obj.funnel.conversions} label={obj.resultName} color="var(--neon-green-light)" delay={0.4} details={`Conversão: ${formatRate(obj.funnel.convRate)}`} isLast={true} />
       </>
     );
   };

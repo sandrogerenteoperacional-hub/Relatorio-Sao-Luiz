@@ -90,12 +90,28 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
   let resultName = 'Resultados';
   let cpa = 0;
   let isCpmBased = false;
+  let funnelLandingViews = landingViews;
+  let funnelLinkClicks = linkClicks > 0 ? linkClicks : clicks;
+  if (funnelLandingViews > funnelLinkClicks) {
+    funnelLinkClicks = clicks > funnelLandingViews ? clicks : funnelLandingViews;
+  }
   
   if (group === 'Conversas & Leads') {
-    const types = ['lead', 'messaging_conversation_started'];
-    result = getActionCount(actions, types);
-    cpa = getActionCost(costs, types);
-    resultName = 'Leads/Conversas';
+    const leads = getActionCount(actions, ['lead']);
+    const msgs = getActionCount(actions, ['messaging_conversation_started']);
+    
+    // Auto-detect if this is actually a traffic campaign disguised as leads (e.g. App meu queridinho)
+    if (landingViews > leads + msgs && landingViews > 10) {
+      result = landingViews;
+      cpa = getActionCost(costs, ['landing_page_view']);
+      resultName = 'Visitas (LP)';
+    } else {
+      const types = ['lead', 'messaging_conversation_started'];
+      result = leads + msgs;
+      cpa = getActionCost(costs, types);
+      resultName = 'Leads/Conversas';
+      funnelLandingViews = 0; // Hide landing views for whatsapp/leads to keep funnel clean
+    }
   } else if (group === 'Vendas') {
     const types = ['purchase'];
     result = getActionCount(actions, types);
@@ -111,17 +127,18 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
         result = igVisits;
         cpa = getActionCost(costs, ['instagram_profile_visit']);
       } else {
-        result = linkClicks > 0 ? linkClicks : clicks;
+        result = funnelLinkClicks;
         cpa = getActionCost(costs, ['link_click']);
       }
       resultName = 'Visitas ao Perfil';
+      funnelLandingViews = 0; // Profile visits don't have landing pages
     } else {
       if (landingViews > 0) {
         result = landingViews;
         cpa = getActionCost(costs, ['landing_page_view']);
         resultName = 'Visitas (LP)';
       } else {
-        result = linkClicks > 0 ? linkClicks : clicks;
+        result = funnelLinkClicks;
         cpa = getActionCost(costs, ['link_click']);
         resultName = 'Cliques no Link';
       }
@@ -154,8 +171,8 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     isCpmBased,
     funnel: {
       impressions,
-      linkClicks: linkClicks > 0 ? linkClicks : clicks,
-      landingViews,
+      linkClicks: funnelLinkClicks,
+      landingViews: funnelLandingViews,
       conversions: result
     }
   };

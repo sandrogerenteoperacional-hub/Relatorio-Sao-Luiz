@@ -31,10 +31,10 @@
   --theme-bg: #ffffff;
   --theme-text: #111827;
   --theme-text-muted: #4b5563;
-  --theme-border: #e5e7eb;
-  --theme-card-bg: #ffffff;
-  --theme-card-bg-hover: #f9fafb;
-  --theme-grid-line: #f3f4f6;
+  --theme-border: #e2e8f0;
+  --theme-card-bg: #f8fafc;
+  --theme-card-bg-hover: #f1f5f9;
+  --theme-grid-line: #e2e8f0;
   --theme-axis-text: #6b7280;
   
   /* Sobrescrevendo nativamente as variáveis antigas para cobrir os itens restantes */

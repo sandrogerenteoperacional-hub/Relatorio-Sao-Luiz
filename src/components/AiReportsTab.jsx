@@ -516,6 +516,11 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
                       <p style={{ margin: 0, fontSize: '12px', color: '#555555', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {c.creative?.title || c.name || 'Sem título'}
                       </p>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '11px', textAlign: 'center' }}>
+                        <a href={imageUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', textDecoration: 'underline' }}>
+                          🔗 Abrir Imagem Original
+                        </a>
+                      </p>
                     </div>
                   );
                 })}

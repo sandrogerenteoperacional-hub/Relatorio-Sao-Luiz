@@ -92,26 +92,30 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
   const handleDownloadPdf = () => {
     if (!reportRef.current) return;
     
-    reportRef.current.classList.add('pdf-light-theme');
+    // Adiciona a classe no body para garantir que todas as variáveis globais sejam atualizadas
+    document.body.classList.add('pdf-light-theme');
     
     const opt = {
-      margin:       [0, 0, 0, 0], // Remove a margem externa branca do PDF
+      margin:       [0, 0, 0, 0],
       filename:     `Relatorio-Mensal-SaoLuiz-${new Date().toISOString().split('T')[0]}.pdf`,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 1200 }, // Fundo branco para o modo light
+      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 1200 },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: ['css', 'legacy'] } // Remove o avoid-all que causa grandes quebras na página
+      pagebreak:    { mode: ['css', 'legacy'] }
     };
 
-    html2pdf()
-      .set(opt)
-      .from(reportRef.current)
-      .toPdf()
-      .get('pdf')
-      .then(() => {
-        reportRef.current.classList.remove('pdf-light-theme');
-      })
-      .save();
+    // Aguarda o navegador repintar a tela no modo light antes de capturar
+    setTimeout(() => {
+      html2pdf()
+        .set(opt)
+        .from(reportRef.current)
+        .toPdf()
+        .get('pdf')
+        .then(() => {
+          document.body.classList.remove('pdf-light-theme');
+        })
+        .save();
+    }, 400); // 400ms para garantir a renderização completa (incluindo os gráficos Recharts)
   };
 
   if (!dataMonth) return null;

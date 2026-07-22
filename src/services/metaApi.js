@@ -18,6 +18,31 @@ export const fetchMetaAdsData = async (accountId, token, since, until) => {
   return data.data || [];
 };
 
+export const fetchDailyInsights = async (accountId, token, since, until) => {
+  const url = `https://graph.facebook.com/v19.0/act_${accountId}/insights`;
+  const params = new URLSearchParams({
+    access_token: token,
+    level: 'account',
+    fields: 'spend,actions',
+    time_increment: '1',
+    time_range: JSON.stringify({ since, until })
+  });
+
+  try {
+    const response = await fetch(`${url}?${params.toString()}`);
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error.message || 'Erro na API da Meta');
+    }
+
+    return data.data || [];
+  } catch (error) {
+    console.error('Meta API Daily Error:', error);
+    throw error;
+  }
+};
+
 export const fetchCampaignsStatus = async (accountId, token) => {
   const url = `https://graph.facebook.com/v19.0/act_${accountId}/campaigns`;
   const params = new URLSearchParams({

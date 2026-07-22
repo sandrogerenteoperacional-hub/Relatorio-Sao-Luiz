@@ -5,8 +5,9 @@ import Settings from './components/Settings';
 import CustomDateFilter from './components/CustomDateFilter';
 import { PresentationReport } from './components/report/PresentationReport';
 import { CreativesTab } from './components/CreativesTab';
+import { ChartsTab } from './components/ChartsTab';
 import { fetchMetaAdsData, fetchCampaignsStatus, processApiData, fetchAdLevelInsights, fetchAdCreativesDetails } from './services/metaApi';
-import { RefreshCw, Settings as SettingsIcon } from 'lucide-react';
+import { RefreshCw, Settings as SettingsIcon, Image, BarChart3, Calendar } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState(null);
@@ -245,7 +246,7 @@ function App() {
         </button>
       </header>
 
-      {errorMsg && activeTab !== 6 && activeTab !== 5 && (
+      {errorMsg && activeTab !== 7 && activeTab !== 5 && (
         <div style={{ background: 'rgba(255, 50, 50, 0.1)', border: '1px solid rgba(255, 50, 50, 0.3)', padding: '1rem', borderRadius: '8px', color: '#ffaaaa', marginBottom: '1rem', textAlign: 'center' }}>
           ⚠️ {errorMsg}
         </div>
@@ -256,14 +257,15 @@ function App() {
         <button className={`tab-button ${activeTab === 1 ? 'active' : ''}`} onClick={() => setActiveTab(1)}>30 Dias</button>
         <button className={`tab-button ${activeTab === 2 ? 'active' : ''}`} onClick={() => setActiveTab(2)}>Este Mês</button>
         <button className={`tab-button ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>Mês Passado</button>
-        <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}>Criativos</button>
-        <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}>Personalizado</button>
-        <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}><Image size={18} /> Criativos</button>
+        <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)}><BarChart3 size={18} /> Gráficos & Funis</button>
+        <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}><Calendar size={18} /> Personalizado</button>
+        <button className={`tab-button ${activeTab === 7 ? 'active' : ''}`} onClick={() => setActiveTab(7)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
         </button>
       </div>
 
-      {!data && activeTab !== 6 && !loading && (
+      {!data && activeTab !== 7 && !loading && (
          <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>
            Dados não encontrados. Vá para a aba "Integração API" para conectar com o Facebook Ads.
          </div>
@@ -275,6 +277,7 @@ function App() {
       {data && activeTab === 3 && <PresentationReport accountId={accountId} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} />}
       
       {activeTab === 4 && <CreativesTab accountId={accountId} token={token} />}
+      {activeTab === 6 && <ChartsTab accountId={accountId} token={token} />}
 
       {activeTab === 5 && (
         <div>

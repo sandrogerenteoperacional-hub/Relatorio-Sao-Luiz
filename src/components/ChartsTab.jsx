@@ -172,7 +172,7 @@ export const ChartsTab = ({ accountId, token }) => {
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: entry.color || entry.fill }}></div>
               <span style={{ color: 'var(--text-muted)' }}>{entry.name}:</span>
               <span style={{ fontWeight: 'bold' }}>
-                {entry.name === 'Investimento' || entry.name.includes('Orçamento') || entry.name === 'value' && entry.payload.name 
+                {entry.name === 'Investimento' || entry.name.includes('Orçamento') || (entry.name === 'value' && entry.payload.name)
                   ? `R$ ${parseFloat(entry.value).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}` 
                   : entry.value.toLocaleString('pt-BR')}
               </span>

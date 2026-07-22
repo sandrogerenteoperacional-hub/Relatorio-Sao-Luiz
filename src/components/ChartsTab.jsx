@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, ComposedChart, Bar, LabelList
+  PieChart, Pie, Cell 
 } from 'recharts';
 import CustomDateFilter from './CustomDateFilter';
 import { fetchDailyInsights, fetchMetaAdsData, getObjectiveGroup } from '../services/metaApi';
-import { TrendingUp, Users, Eye, Target, MousePointerClick, CircleDollarSign } from 'lucide-react';
+import { TrendingUp, Users, Eye, Target, MousePointerClick, CircleDollarSign, Filter } from 'lucide-react';
+import { CustomFunnel } from './CustomFunnel';
 
 const COLORS = ['#00FF80', '#A855F7', '#3B82F6', '#EF4444', '#F59E0B', '#ec4899'];
 
@@ -14,9 +15,10 @@ export const ChartsTab = ({ accountId, token }) => {
   const [error, setError] = useState('');
   
   const [timelineData, setTimelineData] = useState([]);
-  const [funnelData, setFunnelData] = useState([]);
   const [budgetData, setBudgetData] = useState([]);
   const [kpiData, setKpiData] = useState(null);
+  const [campaignsData, setCampaignsData] = useState([]);
+  const [selectedCampaign, setSelectedCampaign] = useState('all');
 
   const formatDateStr = (dateString) => {
     const [year, month, day] = dateString.split('-');
@@ -33,13 +35,11 @@ export const ChartsTab = ({ accountId, token }) => {
       setLoading(true);
       setError('');
       
-      // 1. Fetch Daily Data
       const daily = await fetchDailyInsights(accountId, token, startDate, endDate);
       
       const timeline = daily.map(day => {
         const spend = parseFloat(day.spend || 0);
         let leads = 0;
-        
         if (day.actions) {
            day.actions.forEach(act => {
               if (act.action_type.includes('lead') || act.action_type.includes('messaging_conversation_started')) {
@@ -47,23 +47,20 @@ export const ChartsTab = ({ accountId, token }) => {
               }
            });
         }
-        
         return {
           date: formatDateStr(day.date_start),
           Investimento: spend,
           Leads: leads
         };
       });
-      
       setTimelineData(timeline);
 
-      // 2. Fetch Aggregated Campaign Data for Funnel & Budget
       const campaigns = await fetchMetaAdsData(accountId, token, startDate, endDate);
+      setCampaignsData(campaigns);
       
       let totalImpressions = 0;
       let totalClicks = 0;
       let totalLeads = 0;
-      let totalVendas = 0;
       let totalSpend = 0;
       let totalReach = 0;
       
@@ -73,12 +70,10 @@ export const ChartsTab = ({ accountId, token }) => {
         const group = getObjectiveGroup(camp.objective, camp.campaign_name);
         const spend = parseFloat(camp.spend || 0);
         
-        // Budget & Globals
         if (!budgetMap[group]) budgetMap[group] = 0;
         budgetMap[group] += spend;
         totalSpend += spend;
         
-        // Funnel & KPI Globals
         totalImpressions += parseInt(camp.impressions || 0, 10);
         totalClicks += parseInt(camp.clicks || 0, 10);
         totalReach += parseInt(camp.reach || 0, 10);
@@ -87,9 +82,6 @@ export const ChartsTab = ({ accountId, token }) => {
           camp.actions.forEach(a => {
             if (a.action_type.includes('lead') || a.action_type.includes('messaging_conversation_started')) {
               totalLeads += parseInt(a.value, 10);
-            }
-            if (a.action_type === 'purchase' || a.action_type === 'offsite_conversion.fb_pixel_purchase') {
-              totalVendas += parseInt(a.value, 10);
             }
           });
         }
@@ -100,14 +92,6 @@ export const ChartsTab = ({ accountId, token }) => {
         value: budgetMap[key]
       })).filter(item => item.value > 0).sort((a,b) => b.value - a.value));
 
-      setFunnelData([
-        { step: 'Impressões', value: totalImpressions, fill: '#3B82F6' },
-        { step: 'Cliques', value: totalClicks, fill: '#A855F7' },
-        { step: 'Leads', value: totalLeads, fill: '#ec4899' },
-        { step: 'Vendas', value: totalVendas, fill: '#00FF80' }
-      ]);
-      
-      // Calculate KPIs
       const start = new Date(startDate);
       const end = new Date(endDate);
       const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
@@ -132,8 +116,53 @@ export const ChartsTab = ({ accountId, token }) => {
     }
   };
 
+  const currentFunnelData = useMemo(() => {
+    if (!campaignsData || campaignsData.length === 0) return null;
+    
+    let impressions = 0;
+    let reach = 0;
+    let clicks = 0;
+    let leads = 0;
+    let sales = 0;
+    let spend = 0;
+
+    const filtered = selectedCampaign === 'all' 
+      ? campaignsData 
+      : campaignsData.filter(c => c.campaign_name === selectedCampaign);
+
+    filtered.forEach(camp => {
+      impressions += parseInt(camp.impressions || 0, 10);
+      reach += parseInt(camp.reach || 0, 10);
+      clicks += parseInt(camp.clicks || 0, 10);
+      spend += parseFloat(camp.spend || 0);
+
+      if (camp.actions) {
+        camp.actions.forEach(a => {
+          if (a.action_type.includes('lead') || a.action_type.includes('messaging_conversation_started')) {
+            leads += parseInt(a.value, 10);
+          }
+          if (a.action_type === 'purchase' || a.action_type === 'offsite_conversion.fb_pixel_purchase') {
+            sales += parseInt(a.value, 10);
+          }
+        });
+      }
+    });
+
+    const frequency = reach > 0 ? impressions / reach : 0;
+    const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+    const conversionRate = clicks > 0 ? (leads / clicks) * 100 : 0;
+    const cpa = leads > 0 ? spend / leads : 0;
+
+    return {
+      impressions, reach, frequency, clicks, ctr, leads, conversionRate, sales, cpa
+    };
+  }, [campaignsData, selectedCampaign]);
+
+  const activeCampaignNames = useMemo(() => {
+    return Array.from(new Set(campaignsData.map(c => c.campaign_name))).sort();
+  }, [campaignsData]);
+
   const CustomTooltip = ({ active, payload, label }) => {
-    // ... logic for tooltip (keep it identical)
     if (active && payload && payload.length) {
       return (
         <div style={{ background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', color: 'white' }}>
@@ -197,7 +226,6 @@ export const ChartsTab = ({ accountId, token }) => {
       {timelineData.length > 0 && kpiData && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
-          {/* Sessão de KPIs (Estilo Looker Studio) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             <KpiCard title="Impressões" value={kpiData.impressions.toLocaleString('pt-BR')} icon={<Eye size={16} />} />
             <KpiCard title="Alcance" value={kpiData.reach.toLocaleString('pt-BR')} icon={<Users size={16} />} />
@@ -216,7 +244,6 @@ export const ChartsTab = ({ accountId, token }) => {
             />
           </div>
 
-          {/* Gráfico de Evolução */}
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
             <h3 style={{ color: 'white', marginTop: 0, marginBottom: '1.5rem', fontSize: '1.1rem' }}>Evolução de Investimento vs Leads</h3>
             <div style={{ width: '100%', height: 350 }}>
@@ -246,28 +273,29 @@ export const ChartsTab = ({ accountId, token }) => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
             
-            {/* Funil Visual */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
-              <h3 style={{ color: 'white', marginTop: 0, marginBottom: '1.5rem', fontSize: '1.1rem' }}>Funil de Conversão</h3>
-              <div style={{ width: '100%', height: 300 }}>
-                <ResponsiveContainer>
-                  <ComposedChart data={funnelData} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" horizontal={true} vertical={false} />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="step" type="category" stroke="rgba(255,255,255,0.5)" axisLine={false} tickLine={false} width={80} tick={{fill: 'white', fontSize: 13}} />
-                    <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} content={<CustomTooltip />} />
-                    <Bar dataKey="value" barSize={30} radius={[0, 15, 15, 0]}>
-                      {funnelData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                      <LabelList dataKey="value" position="right" fill="white" formatter={(val) => val.toLocaleString('pt-BR')} style={{fontWeight: 'bold'}} />
-                    </Bar>
-                  </ComposedChart>
-                </ResponsiveContainer>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ color: 'white', margin: 0, fontSize: '1.1rem' }}>O Funil</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Filter size={14} color="var(--text-muted)" />
+                  <select 
+                    value={selectedCampaign} 
+                    onChange={(e) => setSelectedCampaign(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.85rem', cursor: 'pointer' }}
+                  >
+                    <option value="all" style={{ color: 'black' }}>Todas as Campanhas</option>
+                    {activeCampaignNames.map(name => (
+                      <option key={name} value={name} style={{ color: 'black' }}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {currentFunnelData && <CustomFunnel data={currentFunnelData} />}
               </div>
             </div>
 
-            {/* Rosca de Orçamento */}
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'white', marginTop: 0, marginBottom: '0', fontSize: '1.1rem' }}>Distribuição de Orçamento</h3>
               <div style={{ width: '100%', height: 300, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

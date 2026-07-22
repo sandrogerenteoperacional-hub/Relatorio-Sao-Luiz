@@ -55,7 +55,7 @@ export const fetchAdCreativesDetails = async (accountId, token, adIds) => {
   const url = `https://graph.facebook.com/v19.0/act_${accountId}/ads`;
   const params = new URLSearchParams({
     access_token: token,
-    fields: 'id,name,status,creative{thumbnail_url,image_url,body,title,object_story_spec}',
+    fields: 'id,name,status,creative{thumbnail_url,image_url,body,title,object_story_spec,asset_feed_spec}',
     filtering: JSON.stringify([{ field: 'id', operator: 'IN', value: adIds }]),
     limit: 100
   });

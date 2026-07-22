@@ -20,7 +20,7 @@ export const CreativesGallery = ({ creatives }) => {
           const creative = ad.creative || {};
           let imageUrl = null;
           
-          // Buscar imagem em alta resolução (Vídeos e Carrosséis)
+          // 1. Buscar imagem em alta resolução (Vídeos e Carrosséis)
           if (creative.object_story_spec) {
             const spec = creative.object_story_spec;
             if (spec.video_data && spec.video_data.image_url) {
@@ -31,10 +31,18 @@ export const CreativesGallery = ({ creatives }) => {
             }
           }
 
-          // Se for imagem estática comum, o image_url do creative é a versão em alta!
+          // 2. Buscar imagem em alta resolução para Dynamic Creatives (Advantage+)
+          if (!imageUrl && creative.asset_feed_spec) {
+            const asset = creative.asset_feed_spec;
+            if (asset.images && asset.images.length > 0 && asset.images[0].url) {
+              imageUrl = asset.images[0].url;
+            }
+          }
+
+          // 3. Se for imagem estática comum, o image_url do creative é a versão em alta!
           if (!imageUrl) imageUrl = creative.image_url;
 
-          // Fallback final
+          // 4. Fallbacks finais
           if (!imageUrl && creative.object_story_spec?.link_data?.picture) {
             imageUrl = creative.object_story_spec.link_data.picture;
           }

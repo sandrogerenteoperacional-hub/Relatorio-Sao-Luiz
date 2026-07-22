@@ -253,10 +253,16 @@ function App() {
         <button 
           onClick={() => loadData(!!token)}
           className="tab-button"
-          style={{ marginLeft: 'auto', border: '1px solid rgba(255,255,255,0.2)' }}
+          style={{ 
+            marginLeft: 'auto', 
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: loading ? 'white' : 'var(--text-muted)',
+            fontWeight: loading ? 'bold' : '600'
+          }}
           title="Buscar dados mais recentes da Meta"
+          disabled={loading}
         >
-          <RefreshCw size={16} /> Recarregar API
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> {loading ? "Sincronizando..." : "Recarregar API"}
         </button>
       </div>
 

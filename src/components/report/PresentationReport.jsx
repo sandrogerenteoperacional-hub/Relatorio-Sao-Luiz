@@ -53,7 +53,7 @@ const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem', color: 'white' }}>Relatório de Performance</h1>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'white', fontWeight: '800', letterSpacing: '-0.02em' }}>Dashboard Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>Supermercado São Luiz</span></h1>
           <div style={{ color: 'var(--text-muted)', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <span>CONTA: <strong>ACT_{accountId}</strong></span>
             <span>•</span>

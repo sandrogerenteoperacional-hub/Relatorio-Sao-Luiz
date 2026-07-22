@@ -266,7 +266,7 @@ function App() {
         <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}><Image size={18} /> Criativos</button>
         <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)}><BarChart3 size={18} /> Gráficos & Funis</button>
         <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}><Calendar size={18} /> Personalizado</button>
-        <button className={`tab-button ${activeTab === 8 ? 'active' : ''}`} onClick={() => setActiveTab(8)} style={{ color: 'var(--neon-green)' }}><Bot size={18} /> Assistente I.A.</button>
+        <button className={`tab-button ${activeTab === 8 ? 'active' : ''}`} onClick={() => setActiveTab(8)} style={{ color: activeTab === 8 ? 'inherit' : 'var(--neon-green)' }}><Bot size={18} /> Assistente I.A.</button>
         <button className={`tab-button ${activeTab === 7 ? 'active' : ''}`} onClick={() => setActiveTab(7)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
         </button>

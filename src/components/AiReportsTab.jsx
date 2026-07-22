@@ -432,7 +432,7 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
             </div>
           </div>
           
-          <div ref={reportRef} style={{ background: 'var(--bg-dark)', padding: '1rem', borderRadius: '8px' }}>
+          <div style={{ background: 'var(--bg-dark)', padding: '1rem', borderRadius: '8px' }}>
             <textarea 
               value={generatedText}
               onChange={(e) => setGeneratedText(e.target.value)}
@@ -490,6 +490,40 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
           </div>
         </div>
       )}
+
+      {/* Versão Oculta para Impressão PDF Limpa */}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+        <div ref={reportRef} style={{ width: '800px', padding: '40px', background: '#ffffff', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
+          <h1 style={{ color: '#000000', marginBottom: '20px', borderBottom: '2px solid #eeeeee', paddingBottom: '10px', fontSize: '24px' }}>
+            Relatório de Performance - {reportType ? reportType.charAt(0).toUpperCase() + reportType.slice(1) : ''}
+          </h1>
+          <p style={{ color: '#666666', marginBottom: '30px', fontSize: '12px' }}>Gerado em: {new Date().toLocaleString('pt-BR')}</p>
+          
+          <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '14px', color: '#333333' }}>
+            {generatedText}
+          </div>
+          
+          {topCreatives && topCreatives.length > 0 && (
+            <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px solid #eeeeee' }}>
+              <h2 style={{ color: '#000000', marginBottom: '20px', fontSize: '18px' }}>Criativos Mencionados</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                {topCreatives.slice(0, 6).map((c, i) => {
+                  const imageUrl = c.creative?.image_url || c.creative?.thumbnail_url;
+                  if (!imageUrl) return null;
+                  return (
+                    <div key={i} style={{ border: '1px solid #dddddd', borderRadius: '8px', padding: '10px' }}>
+                      <img src={imageUrl} alt={c.name} style={{ width: '100%', height: '150px', objectFit: 'cover', marginBottom: '10px', borderRadius: '4px' }} />
+                      <p style={{ margin: 0, fontSize: '12px', color: '#555555', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {c.creative?.title || c.name || 'Sem título'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
     </div>
   );

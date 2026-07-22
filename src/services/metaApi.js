@@ -122,8 +122,8 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     const isProfile = nameLower.includes('ig') || nameLower.includes('perfil') || nameLower.includes('instagram');
     
     if (isProfile) {
-      let igVisits = getActionCount(actions, ['profile_visit', 'profile_view', 'instagram_profile']);
-      let igCost = getActionCost(costs, ['profile_visit', 'profile_view', 'instagram_profile']);
+      let igVisits = getActionCount(actions, ['profile_visit', 'profile_view', 'instagram_profile', 'post_engagement']);
+      let igCost = getActionCost(costs, ['profile_visit', 'profile_view', 'instagram_profile', 'post_engagement']);
       
       if (igVisits > 0) {
         result = igVisits;

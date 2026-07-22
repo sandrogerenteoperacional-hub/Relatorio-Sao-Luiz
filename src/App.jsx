@@ -6,8 +6,9 @@ import CustomDateFilter from './components/CustomDateFilter';
 import { PresentationReport } from './components/report/PresentationReport';
 import { CreativesTab } from './components/CreativesTab';
 import { ChartsTab } from './components/ChartsTab';
+import { AiReportsTab } from './components/AiReportsTab';
 import { fetchMetaAdsData, fetchCampaignsStatus, processApiData, fetchAdLevelInsights, fetchAdCreativesDetails } from './services/metaApi';
-import { RefreshCw, Settings as SettingsIcon, Image, BarChart3, Calendar } from 'lucide-react';
+import { RefreshCw, Settings as SettingsIcon, Image, BarChart3, Calendar, Bot } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState(null);
@@ -22,12 +23,15 @@ function App() {
   // Tenta pegar do localStorage primeiro, se não tiver, pega da variável de ambiente (Vercel)
   const [accountId, setAccountId] = useState(localStorage.getItem('metaAccountId') || import.meta.env.VITE_META_ACCOUNT_ID || '');
   const [token, setToken] = useState(localStorage.getItem('metaToken') || import.meta.env.VITE_META_TOKEN || '');
+  const [geminiApiKey, setGeminiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
 
-  const saveSettings = (id, tok) => {
+  const saveSettings = (id, tok, gemini) => {
     localStorage.setItem('metaAccountId', id);
     localStorage.setItem('metaToken', tok);
+    if (gemini) localStorage.setItem('geminiApiKey', gemini);
     setAccountId(id);
     setToken(tok);
+    if (gemini) setGeminiApiKey(gemini);
   };
 
   const getDates = () => {
@@ -260,6 +264,7 @@ function App() {
         <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}><Image size={18} /> Criativos</button>
         <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)}><BarChart3 size={18} /> Gráficos & Funis</button>
         <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}><Calendar size={18} /> Personalizado</button>
+        <button className={`tab-button ${activeTab === 8 ? 'active' : ''}`} onClick={() => setActiveTab(8)} style={{ color: 'var(--neon-green)' }}><Bot size={18} /> Assistente I.A.</button>
         <button className={`tab-button ${activeTab === 7 ? 'active' : ''}`} onClick={() => setActiveTab(7)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
         </button>
@@ -278,6 +283,7 @@ function App() {
       
       {activeTab === 4 && <CreativesTab accountId={accountId} token={token} />}
       {activeTab === 6 && <ChartsTab accountId={accountId} token={token} />}
+      {activeTab === 8 && <AiReportsTab accountId={accountId} token={token} geminiApiKey={geminiApiKey} />}
 
       {activeTab === 5 && (
         <div>
@@ -300,6 +306,7 @@ function App() {
         <Settings 
           accountId={accountId} 
           token={token} 
+          geminiApiKey={geminiApiKey}
           onSave={saveSettings} 
           onSync={handleManualSync}
           isSyncing={loading}

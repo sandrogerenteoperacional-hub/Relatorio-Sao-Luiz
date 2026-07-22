@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 
-const Settings = ({ accountId, token, onSave, onSync, isSyncing }) => {
+const Settings = ({ accountId, token, geminiApiKey, onSave, onSync, isSyncing }) => {
   const [localAccountId, setLocalAccountId] = useState(accountId || '');
   const [localToken, setLocalToken] = useState(token || '');
+  const [localGeminiKey, setLocalGeminiKey] = useState(geminiApiKey || '');
 
   const handleSaveAndSync = () => {
-    onSave(localAccountId, localToken);
+    onSave(localAccountId, localToken, localGeminiKey);
     onSync(localAccountId, localToken);
   };
 
@@ -53,6 +54,32 @@ const Settings = ({ accountId, token, onSave, onSync, isSyncing }) => {
             fontFamily: 'monospace'
           }}
         />
+      </div>
+
+      <h3 style={{ marginBottom: '1.5rem', marginTop: '2.5rem', color: 'var(--text-main)', fontSize: '1.4rem' }}>Integração Inteligência Artificial</h3>
+      
+      <div style={{ marginBottom: '2rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          Google Gemini API Key (Opcional)
+        </label>
+        <input 
+          type="password" 
+          value={localGeminiKey}
+          onChange={(e) => setLocalGeminiKey(e.target.value)}
+          placeholder="AIza..."
+          style={{
+            width: '100%',
+            padding: '12px',
+            borderRadius: '8px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'white',
+            fontFamily: 'monospace'
+          }}
+        />
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+          Necessária para gerar os textos da aba Assistente I.A.
+        </p>
       </div>
 
       <button 

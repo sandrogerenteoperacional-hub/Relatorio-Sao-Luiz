@@ -160,13 +160,23 @@ const ObjectiveBreakdown = ({ objectives }) => {
               <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(obj.cpa)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Impressões</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{formatNumber(obj.impressions)}</div>
-            </div>
-            <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>CTR Médio</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{obj.ctr.toFixed(2)}%</div>
             </div>
+            <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>CPM Médio</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{formatCurrency(obj.avgCpm)}</div>
+            </div>
+            <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Frequência</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{obj.avgFrequency.toFixed(2)}</div>
+            </div>
+            {obj.followers > 0 && (
+              <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Seguidores (Tracking)</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatNumber(obj.followers)}</div>
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -344,6 +354,52 @@ const InsightsAndRecommendations = ({ data }) => {
   );
 };
 
+// --- 9. GALERIA DE CRIATIVOS ---
+const CreativesGallery = ({ creatives }) => {
+  if (!creatives || creatives.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: '3rem' }}>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><Zap /> Galeria de Criativos (Top Anúncios)</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        {creatives.map((ad, i) => {
+          const creative = ad.creative || {};
+          const imageUrl = creative.image_url || creative.thumbnail_url;
+          const isActive = ad.status === 'ACTIVE';
+
+          return (
+            <div key={i} className="card" style={{ overflow: 'hidden', padding: 0, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ position: 'relative', height: '200px', backgroundColor: '#000' }}>
+                {imageUrl ? (
+                  <img src={imageUrl} alt={ad.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isActive ? 1 : 0.5 }} />
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', padding: '1rem', textAlign: 'center' }}>
+                    Sem miniatura disponível
+                  </div>
+                )}
+                <div style={{ position: 'absolute', top: '10px', right: '10px', background: isActive ? 'var(--neon-green)' : '#666', color: isActive ? '#000' : '#fff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  {isActive ? 'ATIVO' : 'INATIVO'}
+                </div>
+              </div>
+              <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '1rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ad.name}</h4>
+                {creative.body && (
+                  <p style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.85rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {creative.body}
+                  </p>
+                )}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                   <span style={{ color: 'var(--text-muted)' }}>ID: {ad.id}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export const PresentationReport = ({ currentData, previousData, accountId, label }) => {
   if (!currentData) return null;
 
@@ -355,6 +411,7 @@ export const PresentationReport = ({ currentData, previousData, accountId, label
       <CampaignRanking campaigns={currentData.campaigns} />
       <TrendGraph currentData={currentData} previousData={previousData} />
       <InsightsAndRecommendations data={currentData} />
+      {currentData.creatives && <CreativesGallery creatives={currentData.creatives} />}
     </div>
   );
 };

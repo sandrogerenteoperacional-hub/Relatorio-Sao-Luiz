@@ -32,6 +32,40 @@ export const fetchCampaignsStatus = async (accountId, token) => {
   return data.data || [];
 };
 
+export const fetchAdLevelInsights = async (accountId, token, since, until) => {
+  const url = `https://graph.facebook.com/v19.0/act_${accountId}/insights`;
+  const params = new URLSearchParams({
+    access_token: token,
+    level: 'ad',
+    fields: 'ad_id,ad_name,campaign_name,spend,impressions,clicks,reach',
+    time_range: JSON.stringify({ since, until }),
+    limit: 100 // Pega os 100 principais anúncios do período
+  });
+
+  const response = await fetch(`${url}?${params.toString()}`);
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.data || [];
+};
+
+export const fetchAdCreativesDetails = async (accountId, token, adIds) => {
+  if (!adIds || adIds.length === 0) return [];
+  
+  // A API da Meta permite passar múltiplos IDs filtrados
+  const url = `https://graph.facebook.com/v19.0/act_${accountId}/ads`;
+  const params = new URLSearchParams({
+    access_token: token,
+    fields: 'id,name,status,creative{thumbnail_url,image_url,body,title}',
+    filtering: JSON.stringify([{ field: 'id', operator: 'IN', value: adIds }]),
+    limit: 100
+  });
+
+  const response = await fetch(`${url}?${params.toString()}`);
+  if (!response.ok) return [];
+  const data = await response.json();
+  return data.data || [];
+};
+
 // Extrator mais seguro para evitar contagem dupla (ex: landing_page_view e offsite_conversion.landing_page_view)
 const getActionCount = (actions, actionTypes) => {
   if (!actions || !Array.isArray(actions)) return 0;
@@ -109,6 +143,9 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     funnelLinkClicks = clicks > funnelLandingViews ? clicks : funnelLandingViews;
   }
   
+  // Extração de Seguidores (se a Meta disponibilizar a métrica na conta)
+  const followers = getActionCount(actions, ['instagram_follows', 'follow', 'onsite_conversion.instagram_follows']);
+
   if (group === 'Conversas & Leads') {
     const leads = getActionCount(actions, ['lead']);
     const msgs = getActionCount(actions, ['messaging_conversation_started']);
@@ -192,6 +229,7 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     resultName,
     cpa,
     isCpmBased,
+    followers, // Retorna os seguidores extraídos
     rawActions: rawActionsStr,
     funnel: {
       impressions,
@@ -243,7 +281,7 @@ export const processApiData = (insightsData, campaignsData) => {
     report.summary.totalReach += reach;
 
     const group = getObjectiveGroup(row.objective, name);
-    const { result, resultName, cpa, isCpmBased, funnel, rawActions } = extractFunnelAndResults(group, row, clicks, impressions, reach, spend);
+    const { result, resultName, cpa, isCpmBased, funnel, rawActions, followers } = extractFunnelAndResults(group, row, clicks, impressions, reach, spend);
     const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
 
     const campData = {
@@ -262,6 +300,7 @@ export const processApiData = (insightsData, campaignsData) => {
       result,
       resultName,
       cpa,
+      followers,
       rawActions,
       funnel
     };
@@ -282,6 +321,9 @@ export const processApiData = (insightsData, campaignsData) => {
         reach: 0,
         frequencySum: 0,
         frequencyCount: 0,
+        followers: 0,
+        cpmSum: 0,
+        cpmCount: 0,
         funnel: { impressions: 0, linkClicks: 0, landingViews: 0, conversions: 0 }
       };
     }
@@ -293,10 +335,15 @@ export const processApiData = (insightsData, campaignsData) => {
     obj.impressions += impressions;
     obj.clicks += clicks;
     obj.reach += reach;
+    obj.followers += followers;
     
     if (frequency > 0) {
       obj.frequencySum += frequency;
       obj.frequencyCount++;
+    }
+    if (cpm > 0) {
+      obj.cpmSum += cpm;
+      obj.cpmCount++;
     }
 
     obj.funnel.impressions += funnel.impressions;
@@ -315,6 +362,7 @@ export const processApiData = (insightsData, campaignsData) => {
     
     obj.ctr = obj.impressions > 0 ? (obj.clicks / obj.impressions) * 100 : 0;
     obj.avgFrequency = obj.frequencyCount > 0 ? (obj.frequencySum / obj.frequencyCount) : 1;
+    obj.avgCpm = obj.cpmCount > 0 ? (obj.cpmSum / obj.cpmCount) : 0;
     
     // Funnel conversion rates
     obj.funnel.ctr = obj.funnel.impressions > 0 ? (obj.funnel.linkClicks / obj.funnel.impressions) * 100 : 0;

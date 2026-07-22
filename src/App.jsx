@@ -4,7 +4,7 @@ import './Tabs.css';
 import Settings from './components/Settings';
 import CustomDateFilter from './components/CustomDateFilter';
 import { PresentationReport } from './components/report/PresentationReport';
-import { fetchMetaAdsData, fetchCampaignsStatus, processApiData } from './services/metaApi';
+import { fetchMetaAdsData, fetchCampaignsStatus, processApiData, fetchAdLevelInsights, fetchAdCreativesDetails } from './services/metaApi';
 import { RefreshCw, Settings as SettingsIcon } from 'lucide-react';
 
 function App() {
@@ -123,11 +123,28 @@ function App() {
           
           const process = (raw) => processApiData(raw, campaignsStatus);
 
+          const loadCreativesForPeriod = async (since, until) => {
+            const adInsights = await fetchAdLevelInsights(targetId, targetToken, since, until);
+            const topAds = adInsights.sort((a, b) => (b.spend || 0) - (a.spend || 0)).slice(0, 12);
+            const adIds = topAds.map(ad => ad.ad_id);
+            if (adIds.length > 0) {
+              return await fetchAdCreativesDetails(targetId, targetToken, adIds);
+            }
+            return [];
+          };
+
+          const creativesProms = await Promise.all([
+            loadCreativesForPeriod(c.since7Days, c.until7Days),
+            loadCreativesForPeriod(c.since30Days, c.until30Days),
+            loadCreativesForPeriod(c.sinceMonth, c.untilMonth),
+            loadCreativesForPeriod(c.sinceLastMonth, c.untilLastMonth)
+          ]);
+
           const finalData = {
-            data7Days: { current: process(results[0]), previous: process(results[4]) },
-            data30Days: { current: process(results[1]), previous: process(results[5]) },
-            dataMonth: { current: process(results[2]), previous: process(results[6]) },
-            dataLastMonth: { current: process(results[3]), previous: process(results[7]) }
+            data7Days: { current: { ...process(results[0]), creatives: creativesProms[0] }, previous: process(results[4]) },
+            data30Days: { current: { ...process(results[1]), creatives: creativesProms[1] }, previous: process(results[5]) },
+            dataMonth: { current: { ...process(results[2]), creatives: creativesProms[2] }, previous: process(results[6]) },
+            dataLastMonth: { current: { ...process(results[3]), creatives: creativesProms[3] }, previous: process(results[7]) }
           };
           
           setData(finalData);
@@ -178,7 +195,15 @@ function App() {
       const raw = await fetchMetaAdsData(accountId, token, startDate, endDate);
       const processed = processApiData(raw, campaignsStatus);
       
-      setCustomData({ current: processed, previous: null });
+      const adInsights = await fetchAdLevelInsights(accountId, token, startDate, endDate);
+      const topAds = adInsights.sort((a, b) => (b.spend || 0) - (a.spend || 0)).slice(0, 12);
+      const adIds = topAds.map(ad => ad.ad_id);
+      let creatives = [];
+      if (adIds.length > 0) {
+        creatives = await fetchAdCreativesDetails(accountId, token, adIds);
+      }
+      
+      setCustomData({ current: { ...processed, creatives }, previous: null });
     } catch (err) {
       setCustomError(err.message || 'Erro ao buscar período personalizado.');
     } finally {

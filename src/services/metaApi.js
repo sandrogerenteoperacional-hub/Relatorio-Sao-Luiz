@@ -103,12 +103,12 @@ const getActionCost = (costs, actionTypes) => {
 };
 
 // Classifica a campanha num Grupo de Objetivo Macro
-const getObjectiveGroup = (objective, name) => {
+const getObjectiveGroup = (objective, campaignName) => {
   const objLower = (objective || '').toLowerCase();
-  const nameLower = (name || '').toLowerCase();
-  
-  if (objLower.includes('messages') || objLower.includes('lead') || nameLower.includes('lead') || nameLower.includes('mensagem')) {
-    return 'Conversas & Leads';
+  const nameLower = (campaignName || '').toLowerCase();
+
+  if (objLower.includes('lead') || objLower.includes('messages') || nameLower.includes('lead') || nameLower.includes('wpp') || nameLower.includes('whatsapp') || nameLower.includes('mensagem')) {
+    return 'Leads';
   }
   if (objLower.includes('conversions') || objLower.includes('sales') || nameLower.includes('venda')) {
     return 'Vendas';
@@ -146,9 +146,9 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
   // Extração de Seguidores (se a Meta disponibilizar a métrica na conta)
   const followers = getActionCount(actions, ['instagram_follows', 'follow', 'onsite_conversion.instagram_follows']);
 
-  if (group === 'Conversas & Leads') {
+  if (group === 'Leads') {
     const leads = getActionCount(actions, ['lead']);
-    const msgs = getActionCount(actions, ['messaging_conversation_started']);
+    const msgs = getActionCount(actions, ['messaging_conversation_started', 'messaging_conversation_started_7d']);
     
     // Auto-detect if this is actually a traffic campaign disguised as leads (e.g. App meu queridinho)
     if (landingViews > leads + msgs && landingViews > 10) {
@@ -156,7 +156,7 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
       cpa = getActionCost(costs, ['landing_page_view']);
       resultName = 'Visitas (LP)';
     } else {
-      const types = ['lead', 'messaging_conversation_started'];
+      const types = ['lead', 'messaging_conversation_started', 'messaging_conversation_started_7d'];
       result = leads + msgs;
       cpa = getActionCost(costs, types);
       resultName = 'Leads/Conversas';
@@ -199,7 +199,7 @@ const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) 
     }
   } else if (group === 'Engajamento') {
     // Sem fallback para post_engagement: Engajamento = Conversas Iniciadas
-    const types = ['messaging_conversation_started'];
+    const types = ['messaging_conversation_started', 'messaging_conversation_started_7d'];
     result = getActionCount(actions, types);
     cpa = getActionCost(costs, types);
     resultName = 'Conversas Iniciadas';

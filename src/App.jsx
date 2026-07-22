@@ -3,12 +3,13 @@ import './App.css';
 import './Tabs.css';
 import Settings from './components/Settings';
 import CustomDateFilter from './components/CustomDateFilter';
+import { MonthlyReportTab } from './components/MonthlyReportTab';
 import { PresentationReport } from './components/report/PresentationReport';
 import { CreativesTab } from './components/CreativesTab';
 import { ChartsTab } from './components/ChartsTab';
 import { AiReportsTab } from './components/AiReportsTab';
 import { fetchMetaAdsData, fetchCampaignsStatus, processApiData, fetchAdLevelInsights, fetchAdCreativesDetails } from './services/metaApi';
-import { RefreshCw, Settings as SettingsIcon, Image, BarChart3, Calendar, Bot } from 'lucide-react';
+import { RefreshCw, Settings as SettingsIcon, Image, BarChart3, Calendar, Bot, CalendarDays } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState(null);
@@ -243,6 +244,7 @@ function App() {
         <button className={`tab-button ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>Mês Passado</button>
         <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}><Image size={18} /> Criativos</button>
         <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)}><BarChart3 size={18} /> Gráficos & Funis</button>
+        <button className={`tab-button ${activeTab === 9 ? 'active' : ''}`} onClick={() => setActiveTab(9)}><CalendarDays size={18} /> Relatório Mensal</button>
         <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}><Calendar size={18} /> Personalizado</button>
         <button className={`tab-button ${activeTab === 8 ? 'active' : ''}`} onClick={() => setActiveTab(8)} style={{ color: activeTab === 8 ? 'inherit' : 'var(--neon-green)' }}><Bot size={18} /> Assistente I.A.</button>
         <button className={`tab-button ${activeTab === 7 ? 'active' : ''}`} onClick={() => setActiveTab(7)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -272,8 +274,9 @@ function App() {
       {data && (
         <>
           <div style={{ display: activeTab === 4 ? 'block' : 'none' }}>
-            <CreativesTab accountId={accountId} token={token} />
+            <CreativesTab creatives={data?.data7Days?.current?.creatives || []} />
           </div>
+          {activeTab === 9 && <MonthlyReportTab accountId={accountId} token={token} dataMonth={data?.dataMonth} dateRanges={reportDates} />}
           <div style={{ display: activeTab === 6 ? 'block' : 'none' }}>
             <ChartsTab accountId={accountId} token={token} />
           </div>

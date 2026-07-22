@@ -23,7 +23,7 @@ export const fetchDailyInsights = async (accountId, token, since, until) => {
   const params = new URLSearchParams({
     access_token: token,
     level: 'account',
-    fields: 'spend,actions',
+    fields: 'spend,actions,impressions,clicks,reach',
     time_increment: '1',
     time_range: JSON.stringify({ since, until })
   });

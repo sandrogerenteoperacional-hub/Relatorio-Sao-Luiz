@@ -6,7 +6,7 @@ const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currenc
 const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val || 0);
 
 // --- 1. CAPA / RESUMO EXECUTIVO ---
-const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
+const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaigns }) => {
   const isHealthy = summary.health === 'BOM';
   const isCritical = summary.health === 'CRÍTICO';
   
@@ -47,13 +47,33 @@ const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
     document.body.removeChild(link);
   };
 
+  const renderPercentage = (current, previous, inverseGood = false) => {
+    if (!previous || previous === 0) return null;
+    const diff = current - previous;
+    const percent = (diff / previous) * 100;
+    if (Math.abs(percent) < 0.1) return <span style={{ fontSize: '0.8rem', color: '#888' }}>= 0%</span>;
+    
+    const isPositive = percent > 0;
+    // Para investimento/CPA, redução é bom (inverseGood = true). Para CTR, aumento é bom.
+    let color = isPositive ? 'var(--neon-green)' : '#ff4444';
+    if (inverseGood) {
+      color = isPositive ? '#ff4444' : 'var(--neon-green)';
+    }
+
+    return (
+      <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color, background: `${color}22`, padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>
+        {isPositive ? '↑' : '↓'} {Math.abs(percent).toFixed(1)}%
+      </span>
+    );
+  };
+
   return (
     <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '2rem', marginBottom: '2rem', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: isHealthy ? 'var(--neon-green)' : (isCritical ? '#ff4444' : '#ffb020') }} />
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'white', fontWeight: '800', letterSpacing: '-0.02em' }}>Dashboard Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>Supermercado São Luiz</span></h1>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'white', fontWeight: '800', letterSpacing: '-0.02em' }}>Relatório Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>São Luiz</span></h1>
           <div style={{ color: 'var(--text-muted)', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <span>CONTA: <strong>ACT_{accountId}</strong></span>
             <span>•</span>
@@ -63,6 +83,7 @@ const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
         
         <button 
           onClick={handleExportCSV}
+          className="no-print"
           style={{
             background: 'var(--neon-green)', color: 'var(--bg-dark)', border: 'none', borderRadius: '8px',
             padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold',
@@ -79,18 +100,25 @@ const ExecutiveSummary = ({ summary, accountId, label, campaigns }) => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
         <div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Investimento Total</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(summary.invested)}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--neon-green)' }}>{formatCurrency(summary.invested)}</span>
+            {previousSummary && renderPercentage(summary.invested, previousSummary.invested, true)}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Campanhas Ativas</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{summary.activeCampaignsCount}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{summary.activeCampaignsCount}</span>
+            {previousSummary && renderPercentage(summary.activeCampaignsCount, previousSummary.activeCampaignsCount, false)}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Saúde da Conta (CTR Global)</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isHealthy ? <CheckCircle color="var(--neon-green)" size={28} /> : (isCritical ? <AlertTriangle color="#ff4444" size={28} /> : <Activity color="#ffb020" size={28} />)}
-            <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: isHealthy ? 'var(--neon-green)' : (isCritical ? '#ff4444' : '#ffb020') }}>
-              {summary.health} <span style={{fontSize: '1rem', opacity: 0.8}}>({summary.overallCtr.toFixed(2)}%)</span>
+            <span style={{ display: 'flex', alignItems: 'baseline', fontSize: '1.5rem', fontWeight: 'bold', color: isHealthy ? 'var(--neon-green)' : (isCritical ? '#ff4444' : '#ffb020') }}>
+              {summary.health} <span style={{fontSize: '1rem', opacity: 0.8, marginLeft: '8px'}}>({summary.overallCtr.toFixed(2)}%)</span>
+              {previousSummary && renderPercentage(summary.overallCtr, previousSummary.overallCtr, false)}
             </span>
           </div>
         </div>
@@ -369,7 +397,7 @@ export const PresentationReport = ({ currentData, previousData, accountId, label
 
   return (
     <div style={{ animation: 'fadeInUp 0.5s ease', width: '100%' }}>
-      <ExecutiveSummary summary={currentData.summary} accountId={accountId} label={label} campaigns={currentData.campaigns} />
+      <ExecutiveSummary summary={currentData.summary} previousSummary={previousData?.summary} accountId={accountId} label={label} campaigns={currentData.campaigns} />
       <AccountOverview objectives={currentData.objectives} summary={currentData.summary} />
       <ObjectiveBreakdown objectives={currentData.objectives} />
       <CampaignRanking campaigns={currentData.campaigns} />

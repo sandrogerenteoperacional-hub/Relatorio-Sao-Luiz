@@ -24,12 +24,22 @@ export const generateAiReport = async (apiKey, prompt) => {
     }
 
     // Try to find stable flash versions first, completely ignoring 2.5 which is restricted
-    let selectedModel = validModels.find(m => m.name === 'models/gemini-2.0-flash');
+    // We also avoid gemini-2.0-flash initially if possible because it sometimes has 0 free quota
+    let selectedModel = validModels.find(m => m.name === 'models/gemini-flash-latest');
     if (!selectedModel) {
-      selectedModel = validModels.find(m => m.name === 'models/gemini-flash-latest');
+      selectedModel = validModels.find(m => m.name === 'models/gemini-2.0-flash-lite');
     }
     if (!selectedModel) {
-      selectedModel = validModels.find(m => m.name.includes('flash') && !m.name.includes('2.5'));
+      selectedModel = validModels.find(m => m.name === 'models/gemini-flash-lite-latest');
+    }
+    if (!selectedModel) {
+      selectedModel = validModels.find(m => m.name === 'models/gemini-1.5-flash');
+    }
+    if (!selectedModel) {
+      selectedModel = validModels.find(m => m.name === 'models/gemini-2.0-flash');
+    }
+    if (!selectedModel) {
+      selectedModel = validModels.find(m => m.name.includes('flash') && !m.name.includes('2.5') && !m.name.includes('3.5'));
     }
     if (!selectedModel) {
       selectedModel = validModels.find(m => m.name.includes('pro') && !m.name.includes('2.5'));

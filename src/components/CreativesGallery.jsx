@@ -18,23 +18,28 @@ export const CreativesGallery = ({ creatives }) => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
         {creatives.map((ad, i) => {
           const creative = ad.creative || {};
-          let imageUrl = creative.image_url || creative.thumbnail_url;
+          let imageUrl = null;
           
-          // Buscar imagem em alta resolução
+          // Buscar imagem em alta resolução (Vídeos e Carrosséis)
           if (creative.object_story_spec) {
             const spec = creative.object_story_spec;
             if (spec.video_data && spec.video_data.image_url) {
               imageUrl = spec.video_data.image_url;
             } else if (spec.link_data && spec.link_data.child_attachments && spec.link_data.child_attachments.length > 0) {
-              // Pegar a imagem do primeiro card do carrossel
               const firstChild = spec.link_data.child_attachments[0];
-              if (firstChild.image_url || firstChild.picture) {
-                imageUrl = firstChild.image_url || firstChild.picture;
-              }
-            } else if (spec.link_data && spec.link_data.picture) {
-              imageUrl = spec.link_data.picture;
+              imageUrl = firstChild.image_url || firstChild.picture;
             }
           }
+
+          // Se for imagem estática comum, o image_url do creative é a versão em alta!
+          if (!imageUrl) imageUrl = creative.image_url;
+
+          // Fallback final
+          if (!imageUrl && creative.object_story_spec?.link_data?.picture) {
+            imageUrl = creative.object_story_spec.link_data.picture;
+          }
+          
+          if (!imageUrl) imageUrl = creative.thumbnail_url;
 
           const isActive = ad.status === 'ACTIVE';
 

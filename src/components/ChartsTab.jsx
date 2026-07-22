@@ -58,7 +58,7 @@ export const ChartsTab = ({ accountId, token }) => {
       setTimelineData(timeline);
 
       // 2. Fetch Aggregated Campaign Data for Funnel & Budget
-      const { data: campaigns } = await fetchMetaAdsData(accountId, token, startDate, endDate);
+      const campaigns = await fetchMetaAdsData(accountId, token, startDate, endDate);
       
       let totalImpressions = 0;
       let totalClicks = 0;

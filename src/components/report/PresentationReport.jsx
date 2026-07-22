@@ -392,7 +392,7 @@ const InsightsAndRecommendations = ({ data }) => {
   );
 };
 
-export const PresentationReport = ({ currentData, previousData, accountId, label, dateRanges }) => {
+export const PresentationReport = ({ currentData, previousData, accountId, label, dateRanges, hideAlerts }) => {
   if (!currentData) return null;
 
   return (
@@ -402,7 +402,7 @@ export const PresentationReport = ({ currentData, previousData, accountId, label
       <ObjectiveBreakdown objectives={currentData.objectives} />
       <CampaignRanking campaigns={currentData.campaigns} />
       <TrendGraph currentData={currentData} previousData={previousData} dateRanges={dateRanges} />
-      <InsightsAndRecommendations data={currentData} />
+      {!hideAlerts && <InsightsAndRecommendations data={currentData} />}
     </div>
   );
 };

@@ -13,10 +13,10 @@ const formatDecimal = (val) => (val || 0).toFixed(2);
 const MiniChart = ({ title, data, dataKey, color, format }) => (
   <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', fontWeight: 'bold' }}>{title}</div>
-    <div style={{ height: '100px' }}>
+    <div style={{ height: '120px' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-          <XAxis dataKey="date" hide />
+        <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+          <XAxis dataKey="date" stroke="rgba(255,255,255,0.1)" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} tickFormatter={(val) => val.split('/')[0]} tickLine={false} axisLine={false} minTickGap={10} />
           <YAxis domain={['auto', 'auto']} hide />
           <Tooltip 
             contentStyle={{ backgroundColor: 'var(--bg-dark)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
@@ -93,12 +93,12 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
     if (!reportRef.current) return;
     
     const opt = {
-      margin:       10,
+      margin:       [0, 0, 0, 0], // Remove a margem externa branca do PDF
       filename:     `Relatorio-Mensal-SaoLuiz-${new Date().toISOString().split('T')[0]}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#070908', windowWidth: 1200 }, // Força a cor preta no fundo
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak:    { mode: ['css', 'legacy'] } // Remove o avoid-all que causa grandes quebras na página
     };
 
     html2pdf().from(reportRef.current).set(opt).save();
@@ -132,6 +132,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
           accountId={accountId} 
           label="Mês Atual" 
           dateRanges={{ current: { since: dateRanges?.current?.sinceMonth, until: dateRanges?.current?.untilMonth }, previous: { since: dateRanges?.previous?.sinceMonth, until: dateRanges?.previous?.untilMonth } }} 
+          hideAlerts={true}
         />
         
         <div style={{ marginTop: '3rem', pageBreakInside: 'avoid' }}>

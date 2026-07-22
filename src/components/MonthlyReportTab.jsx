@@ -99,7 +99,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
       margin:       [0, 0, 0, 0],
       filename:     `Relatorio-Mensal-SaoLuiz-${new Date().toISOString().split('T')[0]}.pdf`,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 1200 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#f0f4f8', windowWidth: 1200 },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['css', 'legacy'] }
     };

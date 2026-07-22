@@ -28,12 +28,12 @@
 }
 
 .pdf-light-theme {
-  --theme-bg: #ffffff;
+  --theme-bg: #f0f4f8; /* Fundo cinza super leve para destacar os cartões brancos */
   --theme-text: #111827;
   --theme-text-muted: #4b5563;
   --theme-border: #e2e8f0;
-  --theme-card-bg: #f8fafc;
-  --theme-card-bg-hover: #f1f5f9;
+  --theme-card-bg: #ffffff; /* Cartões brancos para alto contraste com o fundo */
+  --theme-card-bg-hover: #f8fafc;
   --theme-grid-line: #e2e8f0;
   --theme-axis-text: #6b7280;
   

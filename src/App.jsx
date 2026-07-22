@@ -280,7 +280,7 @@ function App() {
       {data && (
         <>
           <div style={{ display: activeTab === 4 ? 'block' : 'none' }}>
-            <CreativesTab creatives={data?.data7Days?.current?.creatives || []} />
+            <CreativesTab accountId={accountId} token={token} creatives={data?.data7Days?.current?.creatives || []} />
           </div>
           {activeTab === 9 && <MonthlyReportTab accountId={accountId} token={token} dataMonth={data?.dataMonth} dateRanges={reportDates} />}
           <div style={{ display: activeTab === 6 ? 'block' : 'none' }}>

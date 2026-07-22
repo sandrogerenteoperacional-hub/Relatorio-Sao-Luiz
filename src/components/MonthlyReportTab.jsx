@@ -3,7 +3,33 @@ import html2pdf from 'html2pdf.js';
 import { Download, Loader2, CalendarDays, TrendingUp } from 'lucide-react';
 import { PresentationReport } from './report/PresentationReport';
 import { fetchDailyInsights } from '../services/metaApi';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val || 0);
+const formatPercent = (val) => `${(val || 0).toFixed(2)}%`;
+const formatDecimal = (val) => (val || 0).toFixed(2);
+
+const MiniChart = ({ title, data, dataKey, color, format }) => (
+  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', fontWeight: 'bold' }}>{title}</div>
+    <div style={{ height: '100px' }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <XAxis dataKey="date" hide />
+          <YAxis domain={['auto', 'auto']} hide />
+          <Tooltip 
+            contentStyle={{ backgroundColor: 'var(--bg-dark)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
+            itemStyle={{ fontWeight: 'bold', color }}
+            labelStyle={{ display: 'none' }}
+            formatter={(value) => [format ? format(value) : value, title]}
+          />
+          <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+);
 
 export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) => {
   const [dailyData, setDailyData] = useState([]);
@@ -22,6 +48,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
         const timeline = daily.map(day => {
           const spend = parseFloat(day.spend || 0);
           const impressions = parseInt(day.impressions || 0, 10);
+          const reach = parseInt(day.reach || 0, 10);
           const clicks = parseInt(day.clicks || 0, 10);
           let leads = 0;
           if (day.actions) {
@@ -31,13 +58,22 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
                 }
              });
           }
+          
           const cpa = leads > 0 ? spend / leads : 0;
+          const cpm = impressions > 0 ? spend / (impressions / 1000) : 0;
+          const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+          const freq = reach > 0 ? impressions / reach : 0;
           
           return {
             date: day.date_start.split('-').slice(1).reverse().join('/'),
             Investimento: spend,
             Leads: leads,
             Cliques: clicks,
+            Impressões: impressions,
+            Alcance: reach,
+            CPM: cpm,
+            Frequência: freq,
+            CTR: ctr,
             CPA: cpa
           };
         });
@@ -108,23 +144,18 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
           ) : error ? (
             <div style={{ color: '#ff4444' }}>{error}</div>
           ) : (
-            <div style={{ height: '400px', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="date" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 12 }} />
-                  <YAxis yAxisId="left" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 12 }} />
-                  <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.4)" tick={{ fontSize: 12 }} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--bg-dark)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    itemStyle={{ fontWeight: 'bold' }}
-                  />
-                  <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  <Line yAxisId="left" type="monotone" dataKey="Investimento" stroke="#F59E0B" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="Leads" stroke="var(--neon-green)" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="Cliques" stroke="#3B82F6" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+              <MiniChart title="Impressões" data={dailyData} dataKey="Impressões" color="#3B82F6" format={formatNumber} />
+              <MiniChart title="Alcance" data={dailyData} dataKey="Alcance" color="#8B5CF6" format={formatNumber} />
+              <MiniChart title="CPM" data={dailyData} dataKey="CPM" color="#F59E0B" format={formatCurrency} />
+              
+              <MiniChart title="Frequência" data={dailyData} dataKey="Frequência" color="#10B981" format={formatDecimal} />
+              <MiniChart title="CTR" data={dailyData} dataKey="CTR" color="#EC4899" format={formatPercent} />
+              <MiniChart title="Cliques" data={dailyData} dataKey="Cliques" color="#06B6D4" format={formatNumber} />
+              
+              <MiniChart title="Contatos" data={dailyData} dataKey="Leads" color="var(--neon-green)" format={formatNumber} />
+              <MiniChart title="Custo P/ Contato" data={dailyData} dataKey="CPA" color="#EF4444" format={formatCurrency} />
+              <MiniChart title="Investimento" data={dailyData} dataKey="Investimento" color="#F97316" format={formatCurrency} />
             </div>
           )}
         </div>

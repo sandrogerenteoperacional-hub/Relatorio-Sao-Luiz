@@ -23,16 +23,16 @@ export const generateAiReport = async (apiKey, prompt) => {
       throw new Error('Nenhum modelo de geração de texto disponível para esta chave de API.');
     }
 
-    // Try to find specifically 1.5-flash first to avoid 2.5 experimental blocks
-    let selectedModel = validModels.find(m => m.name === 'models/gemini-1.5-flash');
+    // Try to find stable flash versions first, completely ignoring 2.5 which is restricted
+    let selectedModel = validModels.find(m => m.name === 'models/gemini-2.0-flash');
     if (!selectedModel) {
-      selectedModel = validModels.find(m => m.name.includes('1.5-flash'));
+      selectedModel = validModels.find(m => m.name === 'models/gemini-flash-latest');
     }
     if (!selectedModel) {
       selectedModel = validModels.find(m => m.name.includes('flash') && !m.name.includes('2.5'));
     }
     if (!selectedModel) {
-      selectedModel = validModels.find(m => m.name.includes('pro'));
+      selectedModel = validModels.find(m => m.name.includes('pro') && !m.name.includes('2.5'));
     }
     if (!selectedModel) {
       selectedModel = validModels[0];

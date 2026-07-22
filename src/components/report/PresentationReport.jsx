@@ -238,12 +238,22 @@ const CampaignRanking = ({ campaigns }) => {
 };
 
 // --- 6. TENDÊNCIA TEMPORAL ---
-const TrendGraph = ({ currentData, previousData }) => {
+const TrendGraph = ({ currentData, previousData, dateRanges }) => {
   if (!previousData || !currentData) return null;
 
+  const formatRange = (range) => {
+    if (!range || !range.since || !range.until) return '';
+    const s = range.since.split('-');
+    const u = range.until.split('-');
+    return `${s[2]}/${s[1]} a ${u[2]}/${u[1]}`;
+  };
+
+  const namePrev = dateRanges && dateRanges.previous ? formatRange(dateRanges.previous) : 'Período Anterior';
+  const nameCurr = dateRanges && dateRanges.current ? formatRange(dateRanges.current) : 'Período Atual';
+
   const data = [
-    { name: 'Período Anterior' },
-    { name: 'Período Atual' }
+    { name: namePrev },
+    { name: nameCurr }
   ];
   
   const groups = new Set([...Object.keys(currentData.objectives), ...Object.keys(previousData.objectives)]);
@@ -293,7 +303,7 @@ const TrendGraph = ({ currentData, previousData }) => {
                 dot={{ r: 5, strokeWidth: 2, stroke: 'var(--bg-dark)', fill: COLORS[i % COLORS.length] }}
                 connectNulls={true} 
               >
-                <LabelList dataKey={g} position="top" offset={10} fill={COLORS[i % COLORS.length]} fontSize={12} fontWeight="bold" formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} />
+                <LabelList dataKey={g} position="top" offset={10} fill="#ffffff" fontSize={13} fontWeight="bold" formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,1))' }} />
               </Area>
             ))}
           </AreaChart>
@@ -377,7 +387,7 @@ const InsightsAndRecommendations = ({ data }) => {
   );
 };
 
-export const PresentationReport = ({ currentData, previousData, accountId, label }) => {
+export const PresentationReport = ({ currentData, previousData, accountId, label, dateRanges }) => {
   if (!currentData) return null;
 
   return (
@@ -386,7 +396,7 @@ export const PresentationReport = ({ currentData, previousData, accountId, label
       <AccountOverview objectives={currentData.objectives} summary={currentData.summary} />
       <ObjectiveBreakdown objectives={currentData.objectives} />
       <CampaignRanking campaigns={currentData.campaigns} />
-      <TrendGraph currentData={currentData} previousData={previousData} />
+      <TrendGraph currentData={currentData} previousData={previousData} dateRanges={dateRanges} />
       <InsightsAndRecommendations data={currentData} />
     </div>
   );

@@ -15,6 +15,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
+  const [reportDates, setReportDates] = useState(null);
   
   const [customData, setCustomData] = useState(null);
   const [customLoading, setCustomLoading] = useState(false);
@@ -107,6 +108,7 @@ function App() {
       if (targetId && targetToken) {
         try {
           const dates = getDates();
+          setReportDates(dates);
           const { current: c, previous: p } = dates;
           
           console.log("Fetching current and previous periods from Meta API...");
@@ -276,13 +278,22 @@ function App() {
          </div>
       )}
 
-      {data && activeTab === 0 && <PresentationReport accountId={accountId} label="Últimos 7 Dias" currentData={data.data7Days.current} previousData={data.data7Days.previous} />}
-      {data && activeTab === 1 && <PresentationReport accountId={accountId} label="Últimos 30 Dias" currentData={data.data30Days.current} previousData={data.data30Days.previous} />}
-      {data && activeTab === 2 && <PresentationReport accountId={accountId} label="Este Mês (Atual)" currentData={data.dataMonth.current} previousData={data.dataMonth.previous} />}
-      {data && activeTab === 3 && <PresentationReport accountId={accountId} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} />}
+      {data && activeTab === 0 && <PresentationReport accountId={accountId} label="Últimos 7 Dias" currentData={data.data7Days.current} previousData={data.data7Days.previous} dateRanges={{ current: { since: reportDates?.current.since7Days, until: reportDates?.current.until7Days }, previous: { since: reportDates?.previous.since7Days, until: reportDates?.previous.until7Days } }} />}
+      {data && activeTab === 1 && <PresentationReport accountId={accountId} label="Últimos 30 Dias" currentData={data.data30Days.current} previousData={data.data30Days.previous} dateRanges={{ current: { since: reportDates?.current.since30Days, until: reportDates?.current.until30Days }, previous: { since: reportDates?.previous.since30Days, until: reportDates?.previous.until30Days } }} />}
+      {data && activeTab === 2 && <PresentationReport accountId={accountId} label="Este Mês (Atual)" currentData={data.dataMonth.current} previousData={data.dataMonth.previous} dateRanges={{ current: { since: reportDates?.current.sinceMonth, until: reportDates?.current.untilMonth }, previous: { since: reportDates?.previous.sinceMonth, until: reportDates?.previous.untilMonth } }} />}
+      {data && activeTab === 3 && <PresentationReport accountId={accountId} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} dateRanges={{ current: { since: reportDates?.current.sinceLastMonth, until: reportDates?.current.untilLastMonth }, previous: { since: reportDates?.previous.sinceLastMonth, until: reportDates?.previous.untilLastMonth } }} />}
       
-      {activeTab === 4 && <CreativesTab accountId={accountId} token={token} />}
-      {activeTab === 6 && <ChartsTab accountId={accountId} token={token} />}
+      {data && (
+        <>
+          <div style={{ display: activeTab === 4 ? 'block' : 'none' }}>
+            <CreativesTab accountId={accountId} token={token} />
+          </div>
+          <div style={{ display: activeTab === 6 ? 'block' : 'none' }}>
+            <ChartsTab accountId={accountId} token={token} />
+          </div>
+        </>
+      )}
+      
       {activeTab === 8 && <AiReportsTab accountId={accountId} token={token} geminiApiKey={geminiApiKey} />}
 
       {activeTab === 5 && (

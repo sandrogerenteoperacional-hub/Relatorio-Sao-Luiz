@@ -7,6 +7,7 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('');
   const [generatedText, setGeneratedText] = useState('');
+  const [topCreatives, setTopCreatives] = useState([]);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
 
@@ -82,7 +83,10 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
 
     text += `\n\n=== PRINCIPAIS CRIATIVOS ATIVOS ===\n`;
     data.creatives.forEach((c, i) => {
-      text += `${i+1}. Título: "${c.name || 'Sem título'}" | Corpo: "${(c.body || '').substring(0, 50)}..."\n`;
+      const creativeData = c.creative || {};
+      const title = creativeData.title || c.name || 'Sem título';
+      const body = creativeData.body || '';
+      text += `${i+1}. Título: "${title}" | Corpo: "${body.substring(0, 50)}..."\n`;
     });
 
     return text;
@@ -102,10 +106,14 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
       setLoading(true);
       setError('');
       setReportType(type);
+      setGeneratedText('');
+      setTopCreatives([]);
       
       const { start, end } = getDates(type);
       const data = await fetchBaseData(start, end);
       const dataStr = formatDataForPrompt(data);
+
+      setTopCreatives(data.creatives);
 
       let prompt = `Você é um Especialista Sênior de Marketing Digital focado em Performance para Supermercados.
       Aqui estão os dados reais extraídos do Meta Ads no período de ${start} a ${end}:
@@ -287,9 +295,46 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
               fontSize: '1rem',
               lineHeight: '1.6',
               fontFamily: 'inherit',
-              resize: 'vertical'
+              resize: 'vertical',
+              marginBottom: '2rem'
             }}
           />
+
+          {topCreatives && topCreatives.length > 0 && (
+            <div>
+              <h4 style={{ color: 'var(--text-main)', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                Criativos Mencionados (Para Baixar/Anexar)
+              </h4>
+              <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+                {topCreatives.slice(0, 6).map((c, i) => {
+                  const imageUrl = c.creative?.image_url || c.creative?.thumbnail_url;
+                  if (!imageUrl) return null;
+                  
+                  return (
+                    <div key={i} style={{ 
+                      minWidth: '150px', 
+                      maxWidth: '150px', 
+                      background: 'rgba(255,255,255,0.05)', 
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      <div style={{ 
+                        width: '100%', 
+                        height: '150px', 
+                        backgroundImage: `url(${imageUrl})`, 
+                        backgroundSize: 'cover', 
+                        backgroundPosition: 'center' 
+                      }} />
+                      <div style={{ padding: '8px', fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {c.creative?.title || c.name || 'Sem título'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

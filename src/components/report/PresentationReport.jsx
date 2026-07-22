@@ -270,15 +270,7 @@ const TrendGraph = ({ currentData, previousData, dateRanges }) => {
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo de Aquisição (CPA)</h2>
       <div className="card" style={{ padding: '2rem', height: '400px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
-            <defs>
-              {Array.from(groups).map((g, i) => (
-                <linearGradient key={`color${g}`} id={`color${g}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0}/>
-                </linearGradient>
-              ))}
-            </defs>
+          <LineChart data={data} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
             <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" axisLine={false} tickLine={false} dy={10} />
             <YAxis stroke="rgba(255,255,255,0.4)" tickFormatter={(val) => `R$ ${val}`} axisLine={false} tickLine={false} />
@@ -289,20 +281,18 @@ const TrendGraph = ({ currentData, previousData, dateRanges }) => {
             />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
             {Array.from(groups).map((g, i) => (
-              <Area 
+              <Line 
                 key={g} 
                 type="monotone" 
                 dataKey={g} 
                 stroke={COLORS[i % COLORS.length]} 
-                strokeWidth={3} 
-                fillOpacity={1} 
-                fill={`url(#color${g})`} 
+                strokeWidth={4} 
                 activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff', fill: COLORS[i % COLORS.length] }} 
-                dot={false}
+                dot={{ r: 4, strokeWidth: 0, fill: COLORS[i % COLORS.length] }}
                 connectNulls={true} 
               />
             ))}
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>

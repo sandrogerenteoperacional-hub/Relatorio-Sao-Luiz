@@ -32,26 +32,39 @@ export const fetchCampaignsStatus = async (accountId, token) => {
   return data.data || [];
 };
 
-// Extrator flexível de ações específicas (busca por substring para evitar problemas com prefixos/sufixos do Meta)
+// Extrator mais seguro para evitar contagem dupla (ex: landing_page_view e offsite_conversion.landing_page_view)
 const getActionCount = (actions, actionTypes) => {
   if (!actions || !Array.isArray(actions)) return 0;
-  let count = 0;
-  for (const a of actions) {
-    if (actionTypes.some(type => a.action_type.includes(type))) {
-      count += parseFloat(a.value || 0);
-    }
+  
+  // 1. Tenta correspondência exata primeiro (evita somar a mesma métrica com prefixos diferentes)
+  for (const type of actionTypes) {
+    const exactMatch = actions.find(a => a.action_type === type);
+    if (exactMatch) return parseFloat(exactMatch.value || 0);
   }
-  return count;
+  
+  // 2. Se não achar exato, tenta achar com prefixos (endsWith)
+  for (const type of actionTypes) {
+    const partialMatch = actions.find(a => a.action_type.endsWith(type));
+    if (partialMatch) return parseFloat(partialMatch.value || 0);
+  }
+  
+  return 0;
 };
 
 // Extrator do custo gerado pela própria Meta API
 const getActionCost = (costs, actionTypes) => {
   if (!costs || !Array.isArray(costs)) return 0;
-  for (const a of costs) {
-    if (actionTypes.some(type => a.action_type.includes(type))) {
-      return parseFloat(a.value || 0);
-    }
+  
+  for (const type of actionTypes) {
+    const exactMatch = costs.find(a => a.action_type === type);
+    if (exactMatch) return parseFloat(exactMatch.value || 0);
   }
+  
+  for (const type of actionTypes) {
+    const partialMatch = costs.find(a => a.action_type.endsWith(type));
+    if (partialMatch) return parseFloat(partialMatch.value || 0);
+  }
+  
   return 0;
 };
 

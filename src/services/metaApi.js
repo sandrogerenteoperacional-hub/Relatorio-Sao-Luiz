@@ -37,7 +37,7 @@ export const fetchAdLevelInsights = async (accountId, token, since, until) => {
   const params = new URLSearchParams({
     access_token: token,
     level: 'ad',
-    fields: 'ad_id,ad_name,campaign_name,spend,impressions,clicks,reach',
+    fields: 'ad_id,ad_name,campaign_name,objective,spend,impressions,clicks,reach,actions,cost_per_action_type,purchase_roas',
     time_range: JSON.stringify({ since, until }),
     limit: 100 // Pega os 100 principais anúncios do período
   });
@@ -102,7 +102,8 @@ const getActionCost = (costs, actionTypes) => {
   return 0;
 };
 
-const getObjectiveGroup = (objective, campaignName) => {
+// Classifica a campanha num Grupo de Objetivo Macro
+export const getObjectiveGroup = (objective, campaignName) => {
   const objLower = (objective || '').toLowerCase();
   const nameLower = (campaignName || '').toLowerCase();
 
@@ -125,7 +126,7 @@ const getObjectiveGroup = (objective, campaignName) => {
 };
 
 // Retorna os dados do Funil, Resultado e CPA extraídos da API
-const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) => {
+export const extractFunnelAndResults = (group, row, clicks, impressions, reach, spend) => {
   const actions = row.actions || [];
   const costs = row.cost_per_action_type || [];
   

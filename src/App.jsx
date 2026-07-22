@@ -4,6 +4,7 @@ import './Tabs.css';
 import Settings from './components/Settings';
 import CustomDateFilter from './components/CustomDateFilter';
 import { PresentationReport } from './components/report/PresentationReport';
+import { CreativesTab } from './components/CreativesTab';
 import { fetchMetaAdsData, fetchCampaignsStatus, processApiData, fetchAdLevelInsights, fetchAdCreativesDetails } from './services/metaApi';
 import { RefreshCw, Settings as SettingsIcon } from 'lucide-react';
 
@@ -255,7 +256,7 @@ function App() {
         <button className={`tab-button ${activeTab === 1 ? 'active' : ''}`} onClick={() => setActiveTab(1)}>30 Dias</button>
         <button className={`tab-button ${activeTab === 2 ? 'active' : ''}`} onClick={() => setActiveTab(2)}>Este Mês</button>
         <button className={`tab-button ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>Mês Passado</button>
-        <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)} style={{display: 'none'}}>Campanhas</button>
+        <button className={`tab-button ${activeTab === 4 ? 'active' : ''}`} onClick={() => setActiveTab(4)}>Criativos</button>
         <button className={`tab-button ${activeTab === 5 ? 'active' : ''}`} onClick={() => setActiveTab(5)}>Personalizado</button>
         <button className={`tab-button ${activeTab === 6 ? 'active' : ''}`} onClick={() => setActiveTab(6)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
@@ -272,6 +273,8 @@ function App() {
       {data && activeTab === 1 && <PresentationReport accountId={accountId} label="Últimos 30 Dias" currentData={data.data30Days.current} previousData={data.data30Days.previous} />}
       {data && activeTab === 2 && <PresentationReport accountId={accountId} label="Este Mês (Atual)" currentData={data.dataMonth.current} previousData={data.dataMonth.previous} />}
       {data && activeTab === 3 && <PresentationReport accountId={accountId} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} />}
+      
+      {activeTab === 4 && <CreativesTab accountId={accountId} token={token} />}
 
       {activeTab === 5 && (
         <div>

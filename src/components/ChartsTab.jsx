@@ -208,7 +208,7 @@ export const ChartsTab = ({ accountId, token }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
         <h3 style={{ marginTop: 0, marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>Selecione o Período</h3>
-        <CustomDateFilter onSearch={handleSearchDates} isSearching={loading} />
+        <CustomDateFilter onSearch={handleSearchDates} isSearching={loading} autoLoad7Days={true} />
       </div>
 
       {error && (

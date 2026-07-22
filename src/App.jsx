@@ -296,7 +296,7 @@ function App() {
         </div>
       )}
 
-      {activeTab === 6 && (
+      {activeTab === 7 && (
         <Settings 
           accountId={accountId} 
           token={token} 

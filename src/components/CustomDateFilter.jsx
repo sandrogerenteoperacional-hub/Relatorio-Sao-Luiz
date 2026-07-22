@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Search } from 'lucide-react';
 
-const CustomDateFilter = ({ onSearch, isSearching }) => {
+const CustomDateFilter = ({ onSearch, isSearching, autoLoad7Days }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activePreset, setActivePreset] = useState('');
 
   const formatDate = (date) => date.toISOString().split('T')[0];
+
+  useEffect(() => {
+    if (autoLoad7Days) {
+      handlePreset('Últimos 7 dias');
+    }
+  }, [autoLoad7Days]);
 
   const handlePreset = (preset) => {
     setActivePreset(preset);

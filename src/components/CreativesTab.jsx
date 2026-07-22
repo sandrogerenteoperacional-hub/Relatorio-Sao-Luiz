@@ -115,7 +115,7 @@ export const CreativesTab = ({ accountId, token }) => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-end' }}>
           <div>
             <h3 style={{ marginTop: 0, marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>Período</h3>
-            <CustomDateFilter onSearch={handleSearchDates} isSearching={loading} />
+            <CustomDateFilter onSearch={handleSearchDates} isSearching={loading} autoLoad7Days={true} />
           </div>
           
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>

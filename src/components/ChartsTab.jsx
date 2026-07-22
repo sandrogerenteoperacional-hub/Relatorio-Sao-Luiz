@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import CustomDateFilter from './CustomDateFilter';
 import { fetchDailyInsights, fetchMetaAdsData, getObjectiveGroup } from '../services/metaApi';
+import { TrendingUp, Users, Eye, Target, MousePointerClick, CircleDollarSign } from 'lucide-react';
 
 const COLORS = ['#00FF80', '#A855F7', '#3B82F6', '#EF4444', '#F59E0B', '#ec4899'];
 
@@ -15,6 +16,7 @@ export const ChartsTab = ({ accountId, token }) => {
   const [timelineData, setTimelineData] = useState([]);
   const [funnelData, setFunnelData] = useState([]);
   const [budgetData, setBudgetData] = useState([]);
+  const [kpiData, setKpiData] = useState(null);
 
   const formatDateStr = (dateString) => {
     const [year, month, day] = dateString.split('-');
@@ -62,6 +64,8 @@ export const ChartsTab = ({ accountId, token }) => {
       let totalClicks = 0;
       let totalLeads = 0;
       let totalVendas = 0;
+      let totalSpend = 0;
+      let totalReach = 0;
       
       const budgetMap = {};
 
@@ -69,13 +73,15 @@ export const ChartsTab = ({ accountId, token }) => {
         const group = getObjectiveGroup(camp.objective, camp.campaign_name);
         const spend = parseFloat(camp.spend || 0);
         
-        // Budget
+        // Budget & Globals
         if (!budgetMap[group]) budgetMap[group] = 0;
         budgetMap[group] += spend;
+        totalSpend += spend;
         
-        // Funnel
+        // Funnel & KPI Globals
         totalImpressions += parseInt(camp.impressions || 0, 10);
         totalClicks += parseInt(camp.clicks || 0, 10);
+        totalReach += parseInt(camp.reach || 0, 10);
         
         if (camp.actions) {
           camp.actions.forEach(a => {
@@ -100,6 +106,24 @@ export const ChartsTab = ({ accountId, token }) => {
         { step: 'Leads', value: totalLeads, fill: '#ec4899' },
         { step: 'Vendas', value: totalVendas, fill: '#00FF80' }
       ]);
+      
+      // Calculate KPIs
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
+      
+      setKpiData({
+        impressions: totalImpressions,
+        reach: totalReach,
+        cpm: totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0,
+        frequency: totalReach > 0 ? (totalImpressions / totalReach) : 0,
+        ctr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
+        clicks: totalClicks,
+        leads: totalLeads,
+        cpa: totalLeads > 0 ? (totalSpend / totalLeads) : 0,
+        spend: totalSpend,
+        projection: diffDays > 0 ? (totalSpend / diffDays) * 30 : 0
+      });
 
     } catch (err) {
       setError('Erro ao buscar dados: ' + err.message);
@@ -109,6 +133,7 @@ export const ChartsTab = ({ accountId, token }) => {
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
+    // ... logic for tooltip (keep it identical)
     if (active && payload && payload.length) {
       return (
         <div style={{ background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', padding: '15px', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', color: 'white' }}>
@@ -129,11 +154,27 @@ export const ChartsTab = ({ accountId, token }) => {
     }
     return null;
   };
+  
+  const KpiCard = ({ title, value, icon, subValue, subLabel }) => (
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <div style={{ color: 'var(--neon-green)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: '600', letterSpacing: '1px', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {icon} {title}
+      </div>
+      <div style={{ color: 'white', fontSize: '1.8rem', fontWeight: 'bold', marginBottom: subValue ? '0.25rem' : '0' }}>
+        {value}
+      </div>
+      {subValue && (
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+          {subLabel}: <span style={{ color: 'white' }}>{subValue}</span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ color: 'white', margin: 0 }}>Gráficos & Funis</h1>
+        <h1 style={{ color: 'white', margin: 0 }}>Gráficos & Inteligência</h1>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -149,13 +190,32 @@ export const ChartsTab = ({ accountId, token }) => {
 
       {timelineData.length === 0 && !loading && !error && (
         <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '3rem' }}>
-          Selecione o período acima para gerar os gráficos.
+          Selecione o período acima para gerar os gráficos e KPIs.
         </div>
       )}
 
-      {timelineData.length > 0 && (
+      {timelineData.length > 0 && kpiData && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
+          {/* Sessão de KPIs (Estilo Looker Studio) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <KpiCard title="Impressões" value={kpiData.impressions.toLocaleString('pt-BR')} icon={<Eye size={16} />} />
+            <KpiCard title="Alcance" value={kpiData.reach.toLocaleString('pt-BR')} icon={<Users size={16} />} />
+            <KpiCard title="CPM" value={`R$ ${kpiData.cpm.toFixed(2).replace('.', ',')}`} icon={<TrendingUp size={16} />} />
+            <KpiCard title="Frequência" value={kpiData.frequency.toFixed(2)} icon={<TrendingUp size={16} />} />
+            <KpiCard title="CTR" value={`${kpiData.ctr.toFixed(2)}%`} icon={<MousePointerClick size={16} />} />
+            <KpiCard title="Cliques" value={kpiData.clicks.toLocaleString('pt-BR')} icon={<MousePointerClick size={16} />} />
+            <KpiCard title="Contatos" value={kpiData.leads.toLocaleString('pt-BR')} icon={<Users size={16} />} />
+            <KpiCard title="Custo p/ Contato" value={`R$ ${kpiData.cpa.toFixed(2).replace('.', ',')}`} icon={<Target size={16} />} />
+            <KpiCard 
+              title="Investimento" 
+              value={`R$ ${kpiData.spend.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`} 
+              icon={<CircleDollarSign size={16} />} 
+              subLabel="Projeção 30 dias" 
+              subValue={`R$ ${kpiData.projection.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`}
+            />
+          </div>
+
           {/* Gráfico de Evolução */}
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
             <h3 style={{ color: 'white', marginTop: 0, marginBottom: '1.5rem', fontSize: '1.1rem' }}>Evolução de Investimento vs Leads</h3>

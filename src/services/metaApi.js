@@ -102,12 +102,11 @@ const getActionCost = (costs, actionTypes) => {
   return 0;
 };
 
-// Classifica a campanha num Grupo de Objetivo Macro
 const getObjectiveGroup = (objective, campaignName) => {
   const objLower = (objective || '').toLowerCase();
   const nameLower = (campaignName || '').toLowerCase();
 
-  if (objLower.includes('lead') || objLower.includes('messages') || nameLower.includes('lead') || nameLower.includes('wpp') || nameLower.includes('whatsapp') || nameLower.includes('mensagem')) {
+  if (objLower.includes('lead') || nameLower.includes('lead')) {
     return 'Leads';
   }
   if (objLower.includes('conversions') || objLower.includes('sales') || nameLower.includes('venda')) {
@@ -119,7 +118,7 @@ const getObjectiveGroup = (objective, campaignName) => {
   if (objLower.includes('reach') || objLower.includes('brand_awareness') || objLower.includes('awareness')) {
     return 'Reconhecimento';
   }
-  if (objLower.includes('engagement') || nameLower.includes('engajamento')) {
+  if (objLower.includes('engagement') || nameLower.includes('engajamento') || objLower.includes('messages') || nameLower.includes('wpp') || nameLower.includes('whatsapp') || nameLower.includes('mensagem')) {
     return 'Engajamento';
   }
   return 'Outros';

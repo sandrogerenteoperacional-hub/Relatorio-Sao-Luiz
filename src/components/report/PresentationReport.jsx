@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import { Target, TrendingUp, AlertTriangle, CheckCircle, Activity, Award, BarChart2, Zap, Download } from 'lucide-react';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
@@ -260,20 +260,43 @@ const TrendGraph = ({ currentData, previousData }) => {
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo de Aquisição (CPA)</h2>
       <div className="card" style={{ padding: '2rem', height: '400px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" />
-            <YAxis stroke="rgba(255,255,255,0.5)" tickFormatter={(val) => `R$ ${val}`} />
+          <AreaChart data={data} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
+            <defs>
+              {Array.from(groups).map((g, i) => (
+                <linearGradient key={`color${g}`} id={`color${g}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0}/>
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" axisLine={false} tickLine={false} dy={10} />
+            <YAxis stroke="rgba(255,255,255,0.4)" tickFormatter={(val) => `R$ ${val}`} axisLine={false} tickLine={false} />
             <RechartsTooltip 
-              contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+              contentStyle={{ backgroundColor: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
               itemStyle={{ fontWeight: 'bold' }}
               formatter={(value) => formatCurrency(value)}
             />
-            <Legend />
+            <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
             {Array.from(groups).map((g, i) => (
-              <Line key={g} type="monotone" dataKey={g} stroke={COLORS[i % COLORS.length]} strokeWidth={3} activeDot={{ r: 8 }} connectNulls={true} />
+              <Area 
+                key={g} 
+                type="monotone" 
+                dataKey={g} 
+                stroke={COLORS[i % COLORS.length]} 
+                strokeWidth={4} 
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fillOpacity={1} 
+                fill={`url(#color${g})`} 
+                activeDot={{ r: 8, strokeWidth: 2, stroke: '#fff', fill: COLORS[i % COLORS.length], filter: 'drop-shadow(0px 0px 5px rgba(255,255,255,0.5))' }} 
+                dot={{ r: 5, strokeWidth: 2, stroke: 'var(--bg-dark)', fill: COLORS[i % COLORS.length] }}
+                connectNulls={true} 
+              >
+                <LabelList dataKey={g} position="top" offset={10} fill={COLORS[i % COLORS.length]} fontSize={12} fontWeight="bold" formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} />
+              </Area>
             ))}
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

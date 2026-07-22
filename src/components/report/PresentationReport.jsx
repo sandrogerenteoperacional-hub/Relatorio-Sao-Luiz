@@ -51,7 +51,7 @@ const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaign
     if (!previous || previous === 0) return null;
     const diff = current - previous;
     const percent = (diff / previous) * 100;
-    if (Math.abs(percent) < 0.1) return <span style={{ fontSize: '0.8rem', color: '#888' }}>= 0%</span>;
+    if (Math.abs(percent) < 0.1) return <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted)' }}>= 0%</span>;
     
     const isPositive = percent > 0;
     // Para investimento/CPA, redução é bom (inverseGood = true). Para CTR, aumento é bom.
@@ -68,7 +68,7 @@ const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaign
   };
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '2rem', marginBottom: '2rem', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--theme-card-bg)', border: '1px solid var(--theme-border)', borderRadius: '16px', padding: '2rem', marginBottom: '2rem', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: isHealthy ? 'var(--neon-green)' : (isCritical ? '#ff4444' : '#ffb020') }} />
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
@@ -149,7 +149,7 @@ const AccountOverview = ({ objectives }) => {
             </Pie>
             <RechartsTooltip 
               formatter={(value) => formatCurrency(value)}
-              contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} 
+              contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid var(--theme-border)', borderRadius: '8px' }} 
             />
             <Legend verticalAlign="bottom" height={36} />
           </PieChart>
@@ -166,11 +166,11 @@ const ObjectiveBreakdown = ({ objectives }) => {
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem' }}><Target /> Desempenho por Objetivo</h2>
       
       {Object.values(objectives).map(obj => (
-        <div key={obj.name} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '2rem', marginBottom: '2rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+        <div key={obj.name} style={{ background: 'var(--theme-card-bg)', borderRadius: '12px', padding: '2rem', marginBottom: '2rem', border: '1px solid var(--theme-grid-line)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--theme-border)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--neon-green)' }}>{obj.name}</h3>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>{obj.campaignCount} campanha(s)</span>
+              <span style={{ background: 'var(--theme-border)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem' }}>{obj.campaignCount} campanha(s)</span>
             </div>
           </div>
 
@@ -224,10 +224,10 @@ const CampaignRanking = ({ campaigns }) => {
   return (
     <div style={{ marginBottom: '3rem' }}>
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem' }}><Award /> Ranking de Eficiência</h2>
-      <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '1rem' }}>
+      <div style={{ overflowX: 'auto', background: 'var(--theme-card-bg)', borderRadius: '12px', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <tr style={{ borderBottom: '1px solid var(--theme-border)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               <th style={{ padding: '1rem' }}>Campanha</th>
               <th style={{ padding: '1rem' }}>Objetivo</th>
               <th style={{ padding: '1rem' }}>Investimento</th>
@@ -241,9 +241,9 @@ const CampaignRanking = ({ campaigns }) => {
             {sorted.map((c, i) => {
               const fatigue = c.frequency > 3;
               return (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.9rem' }}>
+                <tr key={i} style={{ borderBottom: '1px solid var(--theme-grid-line)', fontSize: '0.9rem' }}>
                   <td style={{ padding: '1rem', color: 'var(--theme-text)', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</td>
-                  <td style={{ padding: '1rem' }}><span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{c.group}</span></td>
+                  <td style={{ padding: '1rem' }}><span style={{ background: 'var(--theme-border)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{c.group}</span></td>
                   <td style={{ padding: '1rem', color: 'var(--neon-green)' }}>{formatCurrency(c.spend)}</td>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>{formatNumber(c.result)}</td>
                   <td style={{ padding: '1rem' }}>{formatCurrency(c.cpa)}</td>
@@ -295,18 +295,18 @@ const TrendGraph = ({ currentData, previousData, dateRanges }) => {
       <div className="card" style={{ padding: '2rem', height: '400px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-            <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" axisLine={false} tickLine={false} dy={10} />
-            <YAxis stroke="rgba(255,255,255,0.4)" tickFormatter={(val) => `R$ ${val}`} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--theme-grid-line)" vertical={false} />
+            <XAxis dataKey="name" stroke="var(--theme-axis-text)" axisLine={false} tickLine={false} dy={10} />
+            <YAxis stroke="var(--theme-axis-text)" tickFormatter={(val) => `R$ ${val}`} axisLine={false} tickLine={false} />
             <RechartsTooltip 
-              cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-              contentStyle={{ backgroundColor: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+              cursor={{ fill: 'var(--theme-grid-line)' }}
+              contentStyle={{ backgroundColor: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--theme-border)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
               itemStyle={{ fontWeight: 'bold' }}
               formatter={(value) => formatCurrency(value)}
             />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-            <Bar dataKey={namePrev} fill="rgba(255,255,255,0.2)" radius={[4, 4, 0, 0]}>
-              <LabelList dataKey={namePrev} position="top" fill="rgba(255,255,255,0.5)" fontSize={12} formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} />
+            <Bar dataKey={namePrev} fill="var(--theme-border)" radius={[4, 4, 0, 0]}>
+              <LabelList dataKey={namePrev} position="top" fill="var(--theme-axis-text)" fontSize={12} formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} />
             </Bar>
             <Bar dataKey={nameCurr} fill="var(--neon-green)" radius={[4, 4, 0, 0]}>
               <LabelList dataKey={nameCurr} position="top" fill="#ffffff" fontSize={13} fontWeight="bold" formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,1))' }} />
@@ -377,7 +377,7 @@ const InsightsAndRecommendations = ({ data }) => {
         </ul>
       </div>
 
-      <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '2rem', borderRadius: '12px' }}>
+      <div style={{ background: 'var(--theme-grid-line)', border: '1px solid var(--theme-border)', padding: '2rem', borderRadius: '12px' }}>
         <h3 style={{ margin: '0 0 1.5rem 0', color: 'white' }}>Próximos Passos (Recomendações da IA)</h3>
         <ul style={{ paddingLeft: '1.5rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {bestCamp && <li>Considere escalar o orçamento da campanha <strong>{bestCamp.name}</strong> em 20% para maximizar resultados.</li>}

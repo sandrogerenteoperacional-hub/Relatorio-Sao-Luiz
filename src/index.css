@@ -36,6 +36,13 @@
   --theme-card-bg-hover: #f9fafb;
   --theme-grid-line: #f3f4f6;
   --theme-axis-text: #6b7280;
+  
+  /* Sobrescrevendo nativamente as variáveis antigas para cobrir os itens restantes */
+  --text-muted: #4b5563;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --neon-green: #00b359; /* Verde mais escuro para contraste no fundo branco */
+  --neon-green-glow: rgba(0, 179, 89, 0.2);
+  
   background-color: var(--theme-bg);
   color: var(--theme-text);
 }

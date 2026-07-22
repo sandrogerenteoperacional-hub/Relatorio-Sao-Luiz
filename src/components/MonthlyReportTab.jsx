@@ -11,15 +11,15 @@ const formatPercent = (val) => `${(val || 0).toFixed(2)}%`;
 const formatDecimal = (val) => (val || 0).toFixed(2);
 
 const MiniChart = ({ title, data, dataKey, color, format }) => (
-  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+  <div style={{ background: 'var(--theme-card-bg)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--theme-border)' }}>
     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', fontWeight: 'bold' }}>{title}</div>
     <div style={{ height: '120px' }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
-          <XAxis dataKey="date" stroke="rgba(255,255,255,0.1)" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} tickFormatter={(val) => val.split('/')[0]} tickLine={false} axisLine={false} minTickGap={10} />
+          <XAxis dataKey="date" stroke="var(--theme-border)" tick={{ fontSize: 10, fill: 'var(--theme-axis-text)' }} tickFormatter={(val) => val.split('/')[0]} tickLine={false} axisLine={false} minTickGap={10} />
           <YAxis domain={['auto', 'auto']} hide />
           <Tooltip 
-            contentStyle={{ backgroundColor: 'var(--bg-dark)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
+            contentStyle={{ backgroundColor: 'var(--theme-bg)', border: '1px solid var(--theme-border)', borderRadius: '8px', fontSize: '12px', padding: '4px 8px' }}
             itemStyle={{ fontWeight: 'bold', color }}
             labelStyle={{ display: 'none' }}
             formatter={(value) => [format ? format(value) : value, title]}
@@ -125,7 +125,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
         <button 
           onClick={handleDownloadPdf}
           style={{
-            background: 'var(--neon-green)', color: 'var(--bg-dark)', border: 'none', borderRadius: '8px',
+            background: 'var(--neon-green)', color: 'var(--theme-bg)', border: 'none', borderRadius: '8px',
             padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold',
             cursor: 'pointer', transition: 'all 0.2s ease', outline: 'none'
           }}
@@ -146,7 +146,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
         />
         
         <div style={{ marginTop: '3rem', pageBreakInside: 'avoid' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem', borderBottom: '1px solid var(--theme-border)', paddingBottom: '1rem' }}>
             <TrendingUp /> Evolução Diária das Métricas
           </h2>
           
@@ -173,7 +173,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
         
         {dataMonth.current?.creatives && dataMonth.current.creatives.length > 0 && (
           <div style={{ marginTop: '3rem', pageBreakInside: 'avoid' }}>
-            <h2 style={{ color: 'var(--theme-text)', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <h2 style={{ color: 'var(--theme-text)', marginBottom: '1.5rem', borderBottom: '1px solid var(--theme-border)', paddingBottom: '1rem' }}>
               Top Criativos do Mês
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
@@ -181,9 +181,9 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
                 const imageUrl = c.creative?.image_url || c.creative?.thumbnail_url;
                 if (!imageUrl) return null;
                 return (
-                  <div key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px' }}>
+                  <div key={i} style={{ background: 'var(--theme-grid-line)', border: '1px solid var(--theme-border)', borderRadius: '8px', padding: '10px' }}>
                     <img src={imageUrl} alt={c.name} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '4px', marginBottom: '10px' }} />
-                    <p style={{ margin: 0, fontSize: '12px', color: '#aaaaaa', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--theme-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {c.creative?.title || c.name || 'Sem título'}
                     </p>
                   </div>

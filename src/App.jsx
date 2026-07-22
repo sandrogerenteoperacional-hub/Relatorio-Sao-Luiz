@@ -229,28 +229,6 @@ function App() {
 
   return (
     <div className="app-container">
-      <header className="section-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <button 
-          onClick={() => loadData(!!token)}
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: 'white',
-            padding: '0.75rem 1.25rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            transition: 'all 0.2s',
-            fontWeight: '600'
-          }}
-          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-          onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-        >
-          <RefreshCw size={18} /> Recarregar API
-        </button>
-      </header>
 
       {errorMsg && activeTab !== 7 && activeTab !== 5 && (
         <div style={{ background: 'rgba(255, 50, 50, 0.1)', border: '1px solid rgba(255, 50, 50, 0.3)', padding: '1rem', borderRadius: '8px', color: '#ffaaaa', marginBottom: '1rem', textAlign: 'center' }}>
@@ -269,6 +247,14 @@ function App() {
         <button className={`tab-button ${activeTab === 8 ? 'active' : ''}`} onClick={() => setActiveTab(8)} style={{ color: activeTab === 8 ? 'inherit' : 'var(--neon-green)' }}><Bot size={18} /> Assistente I.A.</button>
         <button className={`tab-button ${activeTab === 7 ? 'active' : ''}`} onClick={() => setActiveTab(7)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
+        </button>
+        <button 
+          onClick={() => loadData(!!token)}
+          className="tab-button"
+          style={{ marginLeft: 'auto', border: '1px solid rgba(255,255,255,0.2)' }}
+          title="Buscar dados mais recentes da Meta"
+        >
+          <RefreshCw size={16} /> Recarregar API
         </button>
       </div>
 

@@ -73,7 +73,7 @@ const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaign
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'white', fontWeight: '800', letterSpacing: '-0.02em' }}>Relatório Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>São Luiz</span></h1>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'var(--theme-text)', fontWeight: '800', letterSpacing: '-0.02em' }}>Relatório Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>São Luiz</span></h1>
           <div style={{ color: 'var(--text-muted)', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <span>CONTA: <strong>ACT_{accountId}</strong></span>
             <span>•</span>
@@ -108,7 +108,7 @@ const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaign
         <div>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Campanhas Ativas</div>
           <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{summary.activeCampaignsCount}</span>
+            <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--theme-text)' }}>{summary.activeCampaignsCount}</span>
             {previousSummary && renderPercentage(summary.activeCampaignsCount, previousSummary.activeCampaignsCount, false)}
           </div>
         </div>
@@ -138,7 +138,7 @@ const AccountOverview = ({ objectives }) => {
 
   return (
     <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><BarChart2 /> Distribuição de Verba</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem' }}><BarChart2 /> Distribuição de Verba</h2>
       <div className="card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'center', height: '350px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -163,7 +163,7 @@ const AccountOverview = ({ objectives }) => {
 const ObjectiveBreakdown = ({ objectives }) => {
   return (
     <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><Target /> Desempenho por Objetivo</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem' }}><Target /> Desempenho por Objetivo</h2>
       
       {Object.values(objectives).map(obj => (
         <div key={obj.name} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '2rem', marginBottom: '2rem', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -181,7 +181,7 @@ const ObjectiveBreakdown = ({ objectives }) => {
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Resultados ({obj.resultName})</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white' }}>{formatNumber(obj.result)}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--theme-text)' }}>{formatNumber(obj.result)}</div>
             </div>
             <div className="card" style={{ background: 'rgba(0,0,0,0.2)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{obj.isCpmBased ? 'Custo / 1.000 Alcançadas' : 'Custo por Resultado'}</div>
@@ -223,7 +223,7 @@ const CampaignRanking = ({ campaigns }) => {
 
   return (
     <div style={{ marginBottom: '3rem' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><Award /> Ranking de Eficiência</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem' }}><Award /> Ranking de Eficiência</h2>
       <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '1rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
           <thead>
@@ -242,7 +242,7 @@ const CampaignRanking = ({ campaigns }) => {
               const fatigue = c.frequency > 3;
               return (
                 <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.9rem' }}>
-                  <td style={{ padding: '1rem', color: 'white', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</td>
+                  <td style={{ padding: '1rem', color: 'var(--theme-text)', maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</td>
                   <td style={{ padding: '1rem' }}><span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>{c.group}</span></td>
                   <td style={{ padding: '1rem', color: 'var(--neon-green)' }}>{formatCurrency(c.spend)}</td>
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>{formatNumber(c.result)}</td>
@@ -291,7 +291,7 @@ const TrendGraph = ({ currentData, previousData, dateRanges }) => {
 
   return (
     <div style={{ marginBottom: '3rem', animation: 'fadeInUp 0.6s ease' }}>
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo de Aquisição (CPA)</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo de Aquisição (CPA)</h2>
       <div className="card" style={{ padding: '2rem', height: '400px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
@@ -346,7 +346,7 @@ const InsightsAndRecommendations = ({ data }) => {
       
       <div style={{ background: 'rgba(0, 255, 136, 0.05)', border: '1px solid rgba(0, 255, 136, 0.2)', padding: '2rem', borderRadius: '12px' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neon-green)', margin: '0 0 1.5rem 0' }}><Zap /> Destaques e Alertas</h3>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', color: 'white' }}>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--theme-text)' }}>
           {bestCamp && (
             <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               <div style={{ padding: '4px', background: 'rgba(0,255,136,0.1)', borderRadius: '50%' }}><Award size={16} color="var(--neon-green)"/></div>

@@ -1,12 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;800&display=swap');
 
 :root {
-  --bg-dark: #070908; /* Mais elegante, quase preto com toque verde */
+  --bg-dark: #070908;
   --bg-glass: rgba(15, 25, 20, 0.55);
   --text-main: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.65);
   
-  --neon-green: #00e676; /* Mais vibrante */
+  /* Variáveis Temáticas para Exportação */
+  --theme-bg: #070908;
+  --theme-text: #ffffff;
+  --theme-text-muted: rgba(255, 255, 255, 0.65);
+  --theme-border: rgba(255, 255, 255, 0.1);
+  --theme-card-bg: rgba(255, 255, 255, 0.03);
+  --theme-card-bg-hover: rgba(255, 255, 255, 0.05);
+  --theme-grid-line: rgba(255, 255, 255, 0.05);
+  --theme-axis-text: rgba(255, 255, 255, 0.4);
+  
+  --neon-green: #00e676;
   --neon-green-light: #69f0ae;
   --neon-green-glow: rgba(0, 230, 118, 0.4);
   
@@ -15,6 +25,19 @@
   
   --font-body: 'Inter', sans-serif;
   --font-display: 'Outfit', sans-serif;
+}
+
+.pdf-light-theme {
+  --theme-bg: #ffffff;
+  --theme-text: #111827;
+  --theme-text-muted: #4b5563;
+  --theme-border: #e5e7eb;
+  --theme-card-bg: #ffffff;
+  --theme-card-bg-hover: #f9fafb;
+  --theme-grid-line: #f3f4f6;
+  --theme-axis-text: #6b7280;
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
 }
 
 * {

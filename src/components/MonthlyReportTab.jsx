@@ -92,16 +92,26 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
   const handleDownloadPdf = () => {
     if (!reportRef.current) return;
     
+    reportRef.current.classList.add('pdf-light-theme');
+    
     const opt = {
       margin:       [0, 0, 0, 0], // Remove a margem externa branca do PDF
       filename:     `Relatorio-Mensal-SaoLuiz-${new Date().toISOString().split('T')[0]}.pdf`,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#070908', windowWidth: 1200 }, // Força a cor preta no fundo
+      html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', windowWidth: 1200 }, // Fundo branco para o modo light
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['css', 'legacy'] } // Remove o avoid-all que causa grandes quebras na página
     };
 
-    html2pdf().from(reportRef.current).set(opt).save();
+    html2pdf()
+      .set(opt)
+      .from(reportRef.current)
+      .toPdf()
+      .get('pdf')
+      .then(() => {
+        reportRef.current.classList.remove('pdf-light-theme');
+      })
+      .save();
   };
 
   if (!dataMonth) return null;
@@ -109,7 +119,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
   return (
     <div style={{ animation: 'fadeIn 0.5s ease', maxWidth: '1100px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <h1 style={{ color: 'var(--theme-text)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <CalendarDays color="var(--neon-green)" /> Relatório Mensal Consolidado
         </h1>
         <button 
@@ -125,7 +135,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
       </div>
       
       {/* Container que será impresso */}
-      <div ref={reportRef} style={{ background: 'var(--bg-dark)', padding: '2rem', borderRadius: '16px', color: 'white' }}>
+      <div ref={reportRef} style={{ background: 'var(--theme-bg)', padding: '2rem', borderRadius: '16px', color: 'var(--theme-text)' }}>
         <PresentationReport 
           currentData={dataMonth.current} 
           previousData={dataMonth.previous} 
@@ -136,7 +146,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
         />
         
         <div style={{ marginTop: '3rem', pageBreakInside: 'avoid' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--theme-text)', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
             <TrendingUp /> Evolução Diária das Métricas
           </h2>
           
@@ -163,7 +173,7 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
         
         {dataMonth.current?.creatives && dataMonth.current.creatives.length > 0 && (
           <div style={{ marginTop: '3rem', pageBreakInside: 'avoid' }}>
-            <h2 style={{ color: 'white', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+            <h2 style={{ color: 'var(--theme-text)', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
               Top Criativos do Mês
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>

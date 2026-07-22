@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import { Target, TrendingUp, AlertTriangle, CheckCircle, Activity, Award, BarChart2, Zap, Download } from 'lucide-react';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
@@ -248,51 +248,42 @@ const TrendGraph = ({ currentData, previousData, dateRanges }) => {
     return `${s[2]}/${s[1]} a ${u[2]}/${u[1]}`;
   };
 
-  const namePrev = dateRanges && dateRanges.previous ? formatRange(dateRanges.previous) : 'Período Anterior';
-  const nameCurr = dateRanges && dateRanges.current ? formatRange(dateRanges.current) : 'Período Atual';
+  const namePrev = dateRanges && dateRanges.previous ? formatRange(dateRanges.previous) : 'Anterior';
+  const nameCurr = dateRanges && dateRanges.current ? formatRange(dateRanges.current) : 'Atual';
 
-  const data = [
-    { name: namePrev },
-    { name: nameCurr }
-  ];
-  
   const groups = new Set([...Object.keys(currentData.objectives), ...Object.keys(previousData.objectives)]);
   
-  groups.forEach(g => {
-    const prev = previousData.objectives[g];
-    const curr = currentData.objectives[g];
-    data[0][g] = prev && prev.cpa > 0 ? prev.cpa : null;
-    data[1][g] = curr && curr.cpa > 0 ? curr.cpa : null;
+  const barData = Array.from(groups).map((g) => {
+    return {
+      name: g,
+      [namePrev]: previousData.objectives[g]?.cpa || 0,
+      [nameCurr]: currentData.objectives[g]?.cpa || 0,
+    };
   });
 
   return (
-    <div style={{ marginBottom: '3rem' }}>
+    <div style={{ marginBottom: '3rem', animation: 'fadeInUp 0.6s ease' }}>
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', marginBottom: '1.5rem' }}><TrendingUp /> Comparativo de Custo de Aquisição (CPA)</h2>
       <div className="card" style={{ padding: '2rem', height: '400px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
+          <BarChart data={barData} margin={{ top: 30, right: 30, left: 20, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
             <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" axisLine={false} tickLine={false} dy={10} />
             <YAxis stroke="rgba(255,255,255,0.4)" tickFormatter={(val) => `R$ ${val}`} axisLine={false} tickLine={false} />
             <RechartsTooltip 
+              cursor={{ fill: 'rgba(255,255,255,0.05)' }}
               contentStyle={{ backgroundColor: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
               itemStyle={{ fontWeight: 'bold' }}
               formatter={(value) => formatCurrency(value)}
             />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-            {Array.from(groups).map((g, i) => (
-              <Line 
-                key={g} 
-                type="monotone" 
-                dataKey={g} 
-                stroke={COLORS[i % COLORS.length]} 
-                strokeWidth={4} 
-                activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff', fill: COLORS[i % COLORS.length] }} 
-                dot={{ r: 4, strokeWidth: 0, fill: COLORS[i % COLORS.length] }}
-                connectNulls={true} 
-              />
-            ))}
-          </LineChart>
+            <Bar dataKey={namePrev} fill="rgba(255,255,255,0.2)" radius={[4, 4, 0, 0]}>
+              <LabelList dataKey={namePrev} position="top" fill="rgba(255,255,255,0.5)" fontSize={12} formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} />
+            </Bar>
+            <Bar dataKey={nameCurr} fill="var(--neon-green)" radius={[4, 4, 0, 0]}>
+              <LabelList dataKey={nameCurr} position="top" fill="#ffffff" fontSize={13} fontWeight="bold" formatter={(val) => val ? `R$ ${val.toFixed(2)}` : ''} style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,1))' }} />
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>

@@ -402,7 +402,6 @@ export const PresentationReport = ({ currentData, previousData, accountId, label
       <ObjectiveBreakdown objectives={currentData.objectives} />
       <CampaignRanking campaigns={currentData.campaigns} />
       <TrendGraph currentData={currentData} previousData={previousData} dateRanges={dateRanges} />
-      {!hideAlerts && <InsightsAndRecommendations data={currentData} />}
     </div>
   );
 };

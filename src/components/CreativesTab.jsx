@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Search, Filter, SortDesc, SortAsc, RefreshCw } from 'lucide-react';
+import { Search, Filter, SortDesc, SortAsc, RefreshCw, PlusCircle } from 'lucide-react';
 import { CreativesGallery } from './CreativesGallery';
 import CustomDateFilter from './CustomDateFilter';
 import { fetchAdLevelInsights, fetchAdCreativesDetails, getObjectiveGroup, extractFunnelAndResults } from '../services/metaApi';
+import { AdCreatorModal } from './AdCreatorModal';
 
 export const CreativesTab = ({ accountId, token }) => {
   const [creatives, setCreatives] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,8 +108,22 @@ export const CreativesTab = ({ accountId, token }) => {
 
   return (
     <div>
+      <AdCreatorModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} accountId={accountId} token={token} />
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ color: 'white', margin: 0 }}>Biblioteca de Criativos</h1>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          style={{ 
+            background: 'transparent', border: '1px solid var(--theme-border)', color: 'var(--text-muted)', 
+            padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold',
+            display: 'flex', alignItems: 'center', gap: '6px'
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--neon-green)'; e.currentTarget.style.borderColor = 'var(--neon-green)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--theme-border)'; }}
+        >
+          <PlusCircle size={16} /> Subir Criativo
+        </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>

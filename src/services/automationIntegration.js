@@ -4,7 +4,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Traz os itens mais recentes gerados pela IA
 export const fetchAutomationCreatives = async () => {
   // 1. Busca os copies (textos) limitando aos 100 mais recentes
-  const copyUrl = `${SUPABASE_URL}/rest/v1/creatives_copy?select=*&order=created_at.desc&limit=100`;
+  const copyUrl = `${SUPABASE_URL}/rest/v1/creatives_copy?select=*&order=copy_generated_at.desc&limit=100`;
   const copyRes = await fetch(copyUrl, {
     headers: {
       'apikey': SUPABASE_KEY,

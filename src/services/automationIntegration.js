@@ -41,7 +41,7 @@ export const fetchAutomationCreatives = async () => {
       file_id: copy.file_id,
       title: copy.copy_title,
       body: copy.copy_main_text || copy.copy_description,
-      folder_name: detail?.folder_name || 'Sem Pasta',
+      folder_name: detail?.folder_name || 'Criativos Recentes (Sem Pasta definida)',
       name: detail?.name || 'Imagem'
     };
   });

@@ -31,6 +31,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   const [autoCreatives, setAutoCreatives] = useState([]);
   const [autoLoading, setAutoLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState('');
+  const [selectedAutoIds, setSelectedAutoIds] = useState(new Set()); // Para os checkboxes
 
   useEffect(() => {
     if (isOpen && accountId && token) {
@@ -57,6 +58,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     try {
       const creatives = await fetchAutomationCreatives();
       setAutoCreatives(creatives);
+      setSelectedAutoIds(new Set()); // Reset selection
       if (creatives.length > 0) {
         const uniqueFolders = [...new Set(creatives.map(c => c.folder_name))];
         setSelectedFolder(uniqueFolders[0]);
@@ -67,6 +69,11 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
       setAutoLoading(false);
     }
   };
+
+  // Quando muda de pasta, resetamos as seleções para não confundir
+  useEffect(() => {
+    setSelectedAutoIds(new Set());
+  }, [selectedFolder]);
 
   const handleAutoFillSingle = async (item) => {
     try {
@@ -96,7 +103,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     try {
       setStatus('uploading');
       
-      // Baixa todas as imagens em paralelo
+      // Baixa todas as imagens selecionadas em paralelo
       const downloadPromises = items.map(item => fetchDriveImageAsFile(item.file_id, item.name));
       const downloadedFiles = await Promise.all(downloadPromises);
       
@@ -106,9 +113,9 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
       
       setFormData(prev => ({
         ...prev,
-        title: items[0]?.title || prev.title,
-        body: "Confira nossas ofertas especiais! Arraste para o lado 👉", // Texto padrão para carrossel
-        name: `[Auto] Carrossel - ${items[0]?.folder_name}`
+        title: '', // Título vai individualmente para cada card
+        body: "Confira nossas ofertas especiais! Arraste para o lado 👉", // Texto geral do carrossel
+        name: `[Auto] Carrossel (${items.length} itens) - ${items[0]?.folder_name}`
       }));
       
       setShowAutoModal(false);
@@ -124,7 +131,8 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     if (selected.length > 0) {
       setFiles(selected);
       setPreviews(selected.map(f => URL.createObjectURL(f)));
-      setCardsData([]); // Limpa dados da automação se subir manual
+      // Para manual, criamos cards vazios
+      setCardsData(selected.map(() => ({ title: '', body: '' })));
     }
   };
 
@@ -142,6 +150,12 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     if (name === 'pageId') {
       localStorage.setItem('metaPageId', value);
     }
+  };
+
+  const handleCardChange = (index, field, value) => {
+    const newCardsData = [...cardsData];
+    newCardsData[index] = { ...newCardsData[index], [field]: value };
+    setCardsData(newCardsData);
   };
 
   const handleSubmit = async (e) => {
@@ -166,18 +180,18 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
         const cardData = cardsData[index] || {};
         return {
           imageHash: hash,
-          title: cardData.title || formData.title, // Fallback para manual
-          body: cardData.body || formData.body,
+          title: cardData.title || formData.title || 'Oferta', // Fallback
+          body: cardData.body || '',
           link: formData.link
         };
       });
 
       const creativeId = await createAdCreative(accountId, token, {
-        name: formData.name || formData.title,
+        name: formData.name || formData.title || 'Anúncio Carrossel',
         pageId: formData.pageId,
         imageHash: imageHashes[0], // fallback principal se não for carrossel
         title: formData.title,
-        body: formData.body, // Main text
+        body: formData.body, // Main text geral
         link: formData.link,
         ctaType: formData.ctaType,
         cards: creativeCards
@@ -185,7 +199,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
 
       setStatus('creating_ad');
       await createAd(accountId, token, {
-        name: formData.name || formData.title,
+        name: formData.name || formData.title || 'Anúncio Carrossel',
         adsetId: formData.adsetId,
         creativeId: creativeId,
         status: 'PAUSED'
@@ -247,29 +261,51 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 </select>
                 <button 
                   type="button"
-                  onClick={() => handleAutoFillCarousel(filteredCreatives)}
-                  disabled={filteredCreatives.length < 2 || status === 'uploading'}
-                  style={{ background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '8px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: (filteredCreatives.length < 2 || status === 'uploading') ? 'not-allowed' : 'pointer', opacity: (filteredCreatives.length < 2 || status === 'uploading') ? 0.5 : 1, fontWeight: 'bold' }}
+                  onClick={() => {
+                    const selectedItems = filteredCreatives.filter(c => selectedAutoIds.has(c.file_id));
+                    handleAutoFillCarousel(selectedItems);
+                  }}
+                  disabled={selectedAutoIds.size < 2 || status === 'uploading'}
+                  style={{ background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '8px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: (selectedAutoIds.size < 2 || status === 'uploading') ? 'not-allowed' : 'pointer', opacity: (selectedAutoIds.size < 2 || status === 'uploading') ? 0.5 : 1, fontWeight: 'bold' }}
                 >
-                  <Layers size={18} /> Importar Lote como Carrossel
+                  <Layers size={18} /> Importar {selectedAutoIds.size} Selecionados
                 </button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                {filteredCreatives.map(item => (
-                  <div key={item.file_id} style={{ border: '1px solid var(--theme-border)', borderRadius: '12px', padding: '1rem', background: 'var(--theme-card-bg)' }}>
-                    <div style={{ fontWeight: 'bold', color: 'var(--theme-text)', marginBottom: '4px', fontSize: '0.95rem' }}>{item.title}</div>
+                {filteredCreatives.map(item => {
+                  const isSelected = selectedAutoIds.has(item.file_id);
+                  return (
+                  <div key={item.file_id} style={{ border: `1px solid ${isSelected ? 'var(--neon-green)' : 'var(--theme-border)'}`, borderRadius: '12px', padding: '1rem', background: 'var(--theme-card-bg)', position: 'relative' }}>
+                    
+                    {/* Checkbox de Seleção */}
+                    <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 2 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedAutoIds);
+                          if (e.target.checked) newSet.add(item.file_id);
+                          else newSet.delete(item.file_id);
+                          setSelectedAutoIds(newSet);
+                        }}
+                        style={{ width: '22px', height: '22px', cursor: 'pointer', accentColor: 'var(--neon-green)' }}
+                      />
+                    </div>
+
+                    <div style={{ fontWeight: 'bold', color: 'var(--theme-text)', marginBottom: '4px', fontSize: '0.95rem', paddingRight: '30px' }}>{item.title}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', maxHeight: '60px', overflow: 'hidden' }}>{item.body}</div>
+                    
                     <button 
                       type="button"
                       onClick={() => handleAutoFillSingle(item)}
                       disabled={status === 'uploading'}
                       style={{ width: '100%', padding: '8px', background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', cursor: status === 'uploading' ? 'not-allowed' : 'pointer', opacity: status === 'uploading' ? 0.5 : 1 }}
                     >
-                      <Download size={16} /> Usar Imagem e Texto (Unitário)
+                      <Download size={16} /> Usar Imagem Unicamente
                     </button>
                   </div>
-                ))}
+                )})}
               </div>
               {filteredCreatives.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Nenhum criativo encontrado nesta pasta.</p>}
             </>
@@ -281,7 +317,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
       {/* Main Modal */}
       <div style={{
         background: 'var(--bg-dark)', border: '1px solid var(--theme-border)',
-        borderRadius: '16px', width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto',
+        borderRadius: '16px', width: '90%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto',
         padding: '2rem', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
         opacity: showAutoModal ? 0.4 : 1, pointerEvents: showAutoModal ? 'none' : 'auto'
       }}>
@@ -320,11 +356,11 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '2rem' }}>
             
             {/* Esquerda: Arquivo e Preview */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold' }}>Imagem do Criativo *</label>
+              <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold' }}>Imagens do Criativo *</label>
               <div style={{ 
                 border: '2px dashed var(--theme-border)', borderRadius: '12px', height: '200px',
                 display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
@@ -337,7 +373,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                        <img key={i} src={src} alt="Preview" style={{ flex: '1 1 45%', height: '45%', objectFit: 'cover', borderRadius: '8px' }} />
                     ))}
                     {previews.length > 4 && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff', fontWeight: 'bold' }}>
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                          +{previews.length - 4} imagens
                       </div>
                     )}
@@ -350,8 +386,8 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 )}
               </div>
               {previews.length > 1 && (
-                <div style={{ color: 'var(--neon-green)', fontSize: '0.8rem', textAlign: 'center', fontWeight: 'bold' }}>
-                  Modo Carrossel ({previews.length} imagens)
+                <div style={{ color: 'var(--neon-green)', fontSize: '0.85rem', textAlign: 'center', fontWeight: 'bold' }}>
+                  Modo Carrossel Ativado ({previews.length} imagens)
                 </div>
               )}
 
@@ -365,37 +401,40 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
 
             {/* Direita: Textos e Configurações */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Campanha *</label>
-                <select 
-                  value={selectedCampaignId} 
-                  onChange={(e) => {
-                    setSelectedCampaignId(e.target.value);
-                    setFormData({ ...formData, adsetId: '' });
-                  }} 
-                  required
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', marginBottom: '1rem' }}
-                >
-                  <option value="">Selecione a Campanha</option>
-                  {Array.from(new Set(adSets.map(s => s.campaign?.id)))
-                    .map(id => adSets.find(s => s.campaign?.id === id)?.campaign)
-                    .filter(Boolean)
-                    .map(camp => (
-                      <option key={camp.id} value={camp.id}>{camp.name}</option>
-                  ))}
-                </select>
-
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Conjunto de Anúncios *</label>
-                <select 
-                  name="adsetId" value={formData.adsetId} onChange={handleChange} required
-                  disabled={!selectedCampaignId}
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', opacity: selectedCampaignId ? 1 : 0.5 }}
-                >
-                  <option value="">Selecione o Conjunto</option>
-                  {adSets.filter(s => s.campaign?.id === selectedCampaignId).map(set => (
-                    <option key={set.id} value={set.id}>{set.name}</option>
-                  ))}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Campanha *</label>
+                  <select 
+                    value={selectedCampaignId} 
+                    onChange={(e) => {
+                      setSelectedCampaignId(e.target.value);
+                      setFormData({ ...formData, adsetId: '' });
+                    }} 
+                    required
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)' }}
+                  >
+                    <option value="">Selecione a Campanha</option>
+                    {Array.from(new Set(adSets.map(s => s.campaign?.id)))
+                      .map(id => adSets.find(s => s.campaign?.id === id)?.campaign)
+                      .filter(Boolean)
+                      .map(camp => (
+                        <option key={camp.id} value={camp.id}>{camp.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Conjunto de Anúncios *</label>
+                  <select 
+                    name="adsetId" value={formData.adsetId} onChange={handleChange} required
+                    disabled={!selectedCampaignId}
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', opacity: selectedCampaignId ? 1 : 0.5 }}
+                  >
+                    <option value="">Selecione o Conjunto</option>
+                    {adSets.filter(s => s.campaign?.id === selectedCampaignId).map(set => (
+                      <option key={set.id} value={set.id}>{set.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -408,24 +447,55 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
               </div>
 
               <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Título Principal (Headline)</label>
-                <input 
-                  type="text" name="title" value={formData.title} onChange={handleChange} required
-                  placeholder="Ex: Oferta Imperdível"
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Texto Principal (Copy)</label>
+                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>
+                  {previews.length > 1 ? 'Texto Geral (Acima do Carrossel)' : 'Texto Principal (Copy)'} *
+                </label>
                 <textarea 
                   name="body" value={formData.body} onChange={handleChange} required
-                  placeholder="Escreva a copy do anúncio..."
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', minHeight: '80px', boxSizing: 'border-box' }}
+                  placeholder="Escreva o texto principal que vai aparecer no anúncio..."
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', minHeight: '70px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '8px' }}>
+              {previews.length <= 1 ? (
+                <div>
+                  <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Título Principal (Headline)</label>
+                  <input 
+                    type="text" name="title" value={formData.title} onChange={handleChange} required
+                    placeholder="Ex: Oferta Imperdível"
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', boxSizing: 'border-box' }}
+                  />
+                </div>
+              ) : (
+                <div style={{ borderTop: '1px solid var(--theme-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                  <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '12px' }}>Personalizar Cartões do Carrossel</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '8px' }}>
+                    {previews.map((src, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '12px', border: '1px solid var(--theme-border)' }}>
+                        <img src={src} alt="card" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <input 
+                            type="text" 
+                            value={cardsData[idx]?.title || ''} 
+                            onChange={e => handleCardChange(idx, 'title', e.target.value)} 
+                            placeholder="Título deste cartão"
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', fontSize: '0.85rem' }}
+                          />
+                          <textarea 
+                            value={cardsData[idx]?.body || ''} 
+                            onChange={e => handleCardChange(idx, 'body', e.target.value)} 
+                            placeholder="Descrição curta do cartão..."
+                            rows={2}
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', fontSize: '0.85rem', resize: 'none' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '8px', marginTop: 'auto' }}>
                 <div>
                   <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Botão</label>
                   <select 

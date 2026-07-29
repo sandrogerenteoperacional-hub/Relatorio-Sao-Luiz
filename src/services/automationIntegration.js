@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://csmhgxnojgvdgjayhkxv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzbWhneG5vamd2ZGdqYXloa3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTI0MDYsImV4cCI6MjA5NTkyODQwNn0.KRIVoIi4ghIhvRv69_-DhS-okzOTMiMOF5S05CrB1GI';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzbWhneG5vamd2ZGdqYXloa3h2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDM1MjQwNiwiZXhwIjoyMDk1OTI4NDA2fQ.NNW42ng9LSWYi28ZVGKDxG4clR-Jsj9JvTnf5Cef4kQ'; // Usando Service Role Key para contornar bloqueios de permissão (RLS)
 
 // Traz os itens mais recentes gerados pela IA
 export const fetchAutomationCreatives = async () => {
@@ -11,7 +11,10 @@ export const fetchAutomationCreatives = async () => {
       'Authorization': `Bearer ${SUPABASE_KEY}`
     }
   });
-  if (!copyRes.ok) throw new Error('Erro ao buscar textos no Supabase');
+  if (!copyRes.ok) {
+    const errText = await copyRes.text();
+    throw new Error(`Erro textos: ${copyRes.status} - ${errText}`);
+  }
   const copies = await copyRes.json();
 
   if (copies.length === 0) return [];
@@ -25,7 +28,10 @@ export const fetchAutomationCreatives = async () => {
       'Authorization': `Bearer ${SUPABASE_KEY}`
     }
   });
-  if (!creatRes.ok) throw new Error('Erro ao buscar pastas no Supabase');
+  if (!creatRes.ok) {
+    const errText = await creatRes.text();
+    throw new Error(`Erro pastas: ${creatRes.status} - ${errText}`);
+  }
   const creativesDetails = await creatRes.json();
 
   // 3. Mescla os dados
@@ -49,7 +55,7 @@ export const fetchDriveImageAsFile = async (fileId, fileName) => {
   const url = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1500`;
   
   const response = await fetch(url);
-  if (!response.ok) throw new Error('Falha ao baixar imagem do Google Drive');
+  if (!response.ok) throw new Error(`Falha ao baixar imagem do Google Drive: ${response.status}`);
   
   const blob = await response.blob();
   

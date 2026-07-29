@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, CheckCircle2, AlertCircle, Image as ImageIcon, Zap, Download } from 'lucide-react';
+import { X, Upload, CheckCircle2, AlertCircle, Image as ImageIcon, Zap, Download, Layers } from 'lucide-react';
 import { fetchAdSetsForCampaigns, uploadAdImage, createAdCreative, createAd } from '../services/metaUploadApi';
 import { fetchAutomationCreatives, fetchDriveImageAsFile } from '../services/automationIntegration';
 
@@ -7,8 +7,10 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   const [adSets, setAdSets] = useState([]);
   const [loadingSets, setLoadingSets] = useState(false);
   
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  // States for images
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [cardsData, setCardsData] = useState([]); // {title, body, file_id}
   
   const [formData, setFormData] = useState({
     pageId: localStorage.getItem('metaPageId') || '102968215747959',
@@ -56,7 +58,6 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
       const creatives = await fetchAutomationCreatives();
       setAutoCreatives(creatives);
       if (creatives.length > 0) {
-        // Set first folder as default
         const uniqueFolders = [...new Set(creatives.map(c => c.folder_name))];
         setSelectedFolder(uniqueFolders[0]);
       }
@@ -67,12 +68,14 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     }
   };
 
-  const handleAutoFill = async (item) => {
+  const handleAutoFillSingle = async (item) => {
     try {
       setStatus('uploading'); // visual feedback
       const downloadedFile = await fetchDriveImageAsFile(item.file_id, item.name);
-      setFile(downloadedFile);
-      setPreview(URL.createObjectURL(downloadedFile));
+      
+      setFiles([downloadedFile]);
+      setPreviews([URL.createObjectURL(downloadedFile)]);
+      setCardsData([item]);
       
       setFormData(prev => ({
         ...prev,
@@ -89,11 +92,39 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     }
   };
 
+  const handleAutoFillCarousel = async (items) => {
+    try {
+      setStatus('uploading');
+      
+      // Baixa todas as imagens em paralelo
+      const downloadPromises = items.map(item => fetchDriveImageAsFile(item.file_id, item.name));
+      const downloadedFiles = await Promise.all(downloadPromises);
+      
+      setFiles(downloadedFiles);
+      setPreviews(downloadedFiles.map(f => URL.createObjectURL(f)));
+      setCardsData(items);
+      
+      setFormData(prev => ({
+        ...prev,
+        title: items[0]?.title || prev.title,
+        body: "Confira nossas ofertas especiais! Arraste para o lado 👉", // Texto padrão para carrossel
+        name: `[Auto] Carrossel - ${items[0]?.folder_name}`
+      }));
+      
+      setShowAutoModal(false);
+      setStatus('idle');
+    } catch (err) {
+      alert("Erro ao baixar imagens do Carrossel: " + err.message);
+      setStatus('idle');
+    }
+  };
+
   const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (selected) {
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
+    const selected = Array.from(e.target.files);
+    if (selected.length > 0) {
+      setFiles(selected);
+      setPreviews(selected.map(f => URL.createObjectURL(f)));
+      setCardsData([]); // Limpa dados da automação se subir manual
     }
   };
 
@@ -101,7 +132,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     const { name, value } = e.target;
     let updates = { [name]: value };
     
-    // Auto fill whatsapp link if CTA changes to WHATSAPP_MESSAGE
+    // Auto fill whatsapp link
     if (name === 'ctaType' && value === 'WHATSAPP_MESSAGE') {
       updates.link = 'https://wa.me/5582991196991';
     }
@@ -115,7 +146,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file || !formData.pageId || !formData.adsetId) {
+    if (files.length === 0 || !formData.pageId || !formData.adsetId) {
       setErrorMsg('Preencha os campos obrigatórios (Página, Imagem e Ad Set).');
       return;
     }
@@ -123,21 +154,37 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     try {
       setErrorMsg('');
       setStatus('uploading');
-      const imageHash = await uploadAdImage(accountId, token, file);
+      
+      // Upload de todas as imagens em paralelo para pegar os hashes
+      const uploadPromises = files.map(file => uploadAdImage(accountId, token, file));
+      const imageHashes = await Promise.all(uploadPromises);
 
       setStatus('creating_creative');
+      
+      // Montar os cartões para a API
+      const creativeCards = imageHashes.map((hash, index) => {
+        const cardData = cardsData[index] || {};
+        return {
+          imageHash: hash,
+          title: cardData.title || formData.title, // Fallback para manual
+          body: cardData.body || formData.body,
+          link: formData.link
+        };
+      });
+
       const creativeId = await createAdCreative(accountId, token, {
         name: formData.name || formData.title,
         pageId: formData.pageId,
-        imageHash,
+        imageHash: imageHashes[0], // fallback principal se não for carrossel
         title: formData.title,
-        body: formData.body,
+        body: formData.body, // Main text
         link: formData.link,
-        ctaType: formData.ctaType
+        ctaType: formData.ctaType,
+        cards: creativeCards
       });
 
       setStatus('creating_ad');
-      const adId = await createAd(accountId, token, {
+      await createAd(accountId, token, {
         name: formData.name || formData.title,
         adsetId: formData.adsetId,
         creativeId: creativeId,
@@ -152,16 +199,16 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   };
 
   const resetForm = () => {
-    setFile(null);
-    setPreview(null);
-    setFormData({ ...formData, name: '', title: '', body: '', link: '' });
+    setFiles([]);
+    setPreviews([]);
+    setCardsData([]);
+    setFormData(prev => ({ ...prev, name: '', title: '', body: '', link: '' }));
     setStatus('idle');
     setErrorMsg('');
   };
 
   if (!isOpen) return null;
 
-  // Folder logic for Automation Modal
   const uniqueFolders = [...new Set(autoCreatives.map(c => c.folder_name))];
   const filteredCreatives = autoCreatives.filter(c => c.folder_name === selectedFolder);
 
@@ -183,7 +230,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
             <h2 style={{ margin: 0, color: 'var(--theme-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Zap color="var(--neon-green)" /> Importar da Automação
             </h2>
-            <button onClick={() => setShowAutoModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+            <button type="button" onClick={() => setShowAutoModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
           </div>
           
           {autoLoading ? (
@@ -191,12 +238,22 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
           ) : (
             <>
               <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Selecione a Ação / Pasta</label>
-              <select 
-                value={selectedFolder} onChange={e => setSelectedFolder(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', marginBottom: '1.5rem' }}
-              >
-                {uniqueFolders.map(folder => <option key={folder} value={folder}>{folder}</option>)}
-              </select>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                <select 
+                  value={selectedFolder} onChange={e => setSelectedFolder(e.target.value)}
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)' }}
+                >
+                  {uniqueFolders.map(folder => <option key={folder} value={folder}>{folder}</option>)}
+                </select>
+                <button 
+                  type="button"
+                  onClick={() => handleAutoFillCarousel(filteredCreatives)}
+                  disabled={filteredCreatives.length < 2 || status === 'uploading'}
+                  style={{ background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '8px', padding: '0 16px', display: 'flex', alignItems: 'center', gap: '8px', cursor: (filteredCreatives.length < 2 || status === 'uploading') ? 'not-allowed' : 'pointer', opacity: (filteredCreatives.length < 2 || status === 'uploading') ? 0.5 : 1, fontWeight: 'bold' }}
+                >
+                  <Layers size={18} /> Importar Lote como Carrossel
+                </button>
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 {filteredCreatives.map(item => (
@@ -204,10 +261,12 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                     <div style={{ fontWeight: 'bold', color: 'var(--theme-text)', marginBottom: '4px', fontSize: '0.95rem' }}>{item.title}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', maxHeight: '60px', overflow: 'hidden' }}>{item.body}</div>
                     <button 
-                      onClick={() => handleAutoFill(item)}
-                      style={{ width: '100%', padding: '8px', background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                      type="button"
+                      onClick={() => handleAutoFillSingle(item)}
+                      disabled={status === 'uploading'}
+                      style={{ width: '100%', padding: '8px', background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', cursor: status === 'uploading' ? 'not-allowed' : 'pointer', opacity: status === 'uploading' ? 0.5 : 1 }}
                     >
-                      <Download size={16} /> Usar Imagem e Texto
+                      <Download size={16} /> Usar Imagem e Texto (Unitário)
                     </button>
                   </div>
                 ))}
@@ -227,6 +286,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
         opacity: showAutoModal ? 0.4 : 1, pointerEvents: showAutoModal ? 'none' : 'auto'
       }}>
         <button 
+          type="button"
           onClick={onClose}
           style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
         >
@@ -252,6 +312,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
             <h3 style={{ color: 'var(--theme-text)' }}>Criativo Publicado com Sucesso!</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>O anúncio foi criado e está <strong>Pausado</strong> no Meta Ads. Você já pode ativá-lo pelo Gerenciador.</p>
             <button 
+              type="button"
               onClick={resetForm}
               style={{ background: 'var(--neon-green)', color: 'var(--bg-dark)', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
             >
@@ -269,16 +330,30 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
                 background: 'var(--theme-card-bg)', position: 'relative', cursor: 'pointer'
               }}>
-                <input type="file" accept="image/*" onChange={handleFileChange} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
-                {preview ? (
-                  <img src={preview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <input type="file" accept="image/*" multiple onChange={handleFileChange} style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} />
+                {previews.length > 0 ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '4px' }}>
+                    {previews.slice(0, 4).map((src, i) => (
+                       <img key={i} src={src} alt="Preview" style={{ flex: '1 1 45%', height: '45%', objectFit: 'cover', borderRadius: '8px' }} />
+                    ))}
+                    {previews.length > 4 && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff', fontWeight: 'bold' }}>
+                         +{previews.length - 4} imagens
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                     <ImageIcon size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                    <p style={{ margin: 0, fontSize: '0.85rem' }}>Clique ou arraste a imagem aqui</p>
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>Clique ou arraste imagens aqui</p>
                   </div>
                 )}
               </div>
+              {previews.length > 1 && (
+                <div style={{ color: 'var(--neon-green)', fontSize: '0.8rem', textAlign: 'center', fontWeight: 'bold' }}>
+                  Modo Carrossel ({previews.length} imagens)
+                </div>
+              )}
 
               <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', marginTop: '1rem' }}>Page ID (Página do Facebook) *</label>
               <input 
@@ -333,7 +408,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
               </div>
 
               <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Título (Headline)</label>
+                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Título Principal (Headline)</label>
                 <input 
                   type="text" name="title" value={formData.title} onChange={handleChange} required
                   placeholder="Ex: Oferta Imperdível"
@@ -390,7 +465,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 }}
               >
                 {status === 'idle' || status === 'error' ? 'Publicar Anúncio' : 
-                 status === 'uploading' ? '1/3 Trabalhando com Imagem...' : 
+                 status === 'uploading' ? `1/3 Trabalhando com Imagens...` : 
                  status === 'creating_creative' ? '2/3 Montando Criativo...' : 
                  '3/3 Finalizando Publicação...'}
               </button>

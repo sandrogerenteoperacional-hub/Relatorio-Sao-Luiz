@@ -36,22 +36,51 @@ export const uploadAdImage = async (accountId, token, file) => {
   return data.images[firstImageKey].hash;
 };
 
-export const createAdCreative = async (accountId, token, { name, pageId, imageHash, title, body, link, ctaType = 'LEARN_MORE' }) => {
+export const createAdCreative = async (accountId, token, { name, pageId, imageHash, title, body, link, ctaType = 'LEARN_MORE', cards }) => {
   const url = `https://graph.facebook.com/v19.0/act_${accountId}/adcreatives`;
   
-  const objectStorySpec = {
-    page_id: pageId,
-    link_data: {
-      image_hash: imageHash,
-      link: link,
-      message: body,
-      name: title,
-      call_to_action: {
-        type: ctaType,
-        value: { link: link }
+  let objectStorySpec;
+
+  if (cards && cards.length > 1) {
+    // Modo Carrossel
+    objectStorySpec = {
+      page_id: pageId,
+      link_data: {
+        link: link, // Link principal do carrossel (fallback)
+        message: body, // Texto principal do anúncio
+        child_attachments: cards.map(c => ({
+          link: c.link || link,
+          image_hash: c.imageHash,
+          name: c.title,
+          description: c.body,
+          call_to_action: {
+            type: ctaType,
+            value: { link: c.link || link }
+          }
+        }))
       }
-    }
-  };
+    };
+  } else {
+    // Modo Imagem Única
+    const singleHash = cards ? cards[0].imageHash : imageHash;
+    const singleTitle = cards ? cards[0].title : title;
+    // se for single via cards, o body individual vai no description, mas no single o body é o message (main text)
+    // Para simplificar, mantemos o body (message principal) e usamos o title no nome.
+    
+    objectStorySpec = {
+      page_id: pageId,
+      link_data: {
+        image_hash: singleHash,
+        link: link,
+        message: body,
+        name: singleTitle,
+        call_to_action: {
+          type: ctaType,
+          value: { link: link }
+        }
+      }
+    };
+  }
 
   const params = new URLSearchParams({
     access_token: token,

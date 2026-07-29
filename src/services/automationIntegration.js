@@ -34,14 +34,25 @@ export const fetchAutomationCreatives = async () => {
   }
   const creativesDetails = await creatRes.json();
 
-  // 3. Mescla os dados
+  // 3. Mescla os dados e cria um "falso nome de pasta" baseado na data se não tiver pasta
   const merged = copies.map(copy => {
     const detail = creativesDetails.find(d => d.file_id === copy.file_id);
+    
+    // Se não tiver pasta oficial no BD, agrupamos pela data e hora de geração (que é única por lote)
+    let fallbackFolder = 'Criativos Recentes';
+    if (copy.copy_generated_at) {
+      const date = new Date(copy.copy_generated_at);
+      // Agrupa por dia, hora e minuto
+      const dataStr = date.toLocaleDateString('pt-BR');
+      const horaStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      fallbackFolder = `Lote gerado em ${dataStr} às ${horaStr}`;
+    }
+
     return {
       file_id: copy.file_id,
       title: copy.copy_title,
       body: copy.copy_main_text || copy.copy_description,
-      folder_name: detail?.folder_name || 'Criativos Recentes (Sem Pasta definida)',
+      folder_name: detail?.folder_name || fallbackFolder,
       name: detail?.name || 'Imagem'
     };
   });
@@ -51,8 +62,8 @@ export const fetchAutomationCreatives = async () => {
 
 // Baixa a imagem do Google Drive e converte para File nativo que o Meta aceita
 export const fetchDriveImageAsFile = async (fileId, fileName) => {
-  // Baixamos a miniatura de alta resolução para evitar problemas de CORS com o endpoint de exportação
-  const url = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1500`;
+  // NOVA SOLUÇÃO: lh3.googleusercontent.com contorna bloqueios de CORS do Google Drive!
+  const url = `https://lh3.googleusercontent.com/d/${fileId}=w1500`;
   
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Falha ao baixar imagem do Google Drive: ${response.status}`);

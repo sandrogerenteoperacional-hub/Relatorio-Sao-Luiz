@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, CheckCircle2, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, CheckCircle2, AlertCircle, Image as ImageIcon, Zap, Download } from 'lucide-react';
 import { fetchAdSetsForCampaigns, uploadAdImage, createAdCreative, createAd } from '../services/metaUploadApi';
+import { fetchAutomationCreatives, fetchDriveImageAsFile } from '../services/automationIntegration';
 
 export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   const [adSets, setAdSets] = useState([]);
@@ -10,17 +11,24 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   const [preview, setPreview] = useState(null);
   
   const [formData, setFormData] = useState({
-    pageId: localStorage.getItem('metaPageId') || '',
+    pageId: localStorage.getItem('metaPageId') || '102968215747959',
     adsetId: '',
     name: '',
     title: '',
     body: '',
-    link: ''
+    link: '',
+    ctaType: 'LEARN_MORE'
   });
 
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [status, setStatus] = useState('idle'); // idle, uploading, creating_creative, creating_ad, success, error
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Automation Modal State
+  const [showAutoModal, setShowAutoModal] = useState(false);
+  const [autoCreatives, setAutoCreatives] = useState([]);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState('');
 
   useEffect(() => {
     if (isOpen && accountId && token) {
@@ -32,13 +40,52 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     try {
       setLoadingSets(true);
       const sets = await fetchAdSetsForCampaigns(accountId, token);
-      // Filter only active campaigns and active adsets to make it cleaner
       const activeSets = sets.filter(s => s.status === 'ACTIVE' && s.campaign?.status !== 'PAUSED');
       setAdSets(activeSets);
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingSets(false);
+    }
+  };
+
+  const openAutoModal = async () => {
+    setShowAutoModal(true);
+    setAutoLoading(true);
+    try {
+      const creatives = await fetchAutomationCreatives();
+      setAutoCreatives(creatives);
+      if (creatives.length > 0) {
+        // Set first folder as default
+        const uniqueFolders = [...new Set(creatives.map(c => c.folder_name))];
+        setSelectedFolder(uniqueFolders[0]);
+      }
+    } catch (err) {
+      alert("Erro ao buscar criativos: " + err.message);
+    } finally {
+      setAutoLoading(false);
+    }
+  };
+
+  const handleAutoFill = async (item) => {
+    try {
+      setStatus('uploading'); // visual feedback
+      const downloadedFile = await fetchDriveImageAsFile(item.file_id, item.name);
+      setFile(downloadedFile);
+      setPreview(URL.createObjectURL(downloadedFile));
+      
+      setFormData(prev => ({
+        ...prev,
+        title: item.title || prev.title,
+        body: item.body || prev.body,
+        name: `[Auto] ${item.folder_name} - ${item.name}`
+      }));
+      
+      setShowAutoModal(false);
+      setStatus('idle');
+    } catch (err) {
+      alert("Erro ao baixar imagem: " + err.message);
+      setStatus('idle');
     }
   };
 
@@ -51,9 +98,18 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (e.target.name === 'pageId') {
-      localStorage.setItem('metaPageId', e.target.value);
+    const { name, value } = e.target;
+    let updates = { [name]: value };
+    
+    // Auto fill whatsapp link if CTA changes to WHATSAPP_MESSAGE
+    if (name === 'ctaType' && value === 'WHATSAPP_MESSAGE') {
+      updates.link = 'https://wa.me/5582991196991';
+    }
+    
+    setFormData(prev => ({ ...prev, ...updates }));
+    
+    if (name === 'pageId') {
+      localStorage.setItem('metaPageId', value);
     }
   };
 
@@ -66,12 +122,9 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
 
     try {
       setErrorMsg('');
-      
-      // Step 1: Upload Image
       setStatus('uploading');
       const imageHash = await uploadAdImage(accountId, token, file);
 
-      // Step 2: Create Creative
       setStatus('creating_creative');
       const creativeId = await createAdCreative(accountId, token, {
         name: formData.name || formData.title,
@@ -79,16 +132,16 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
         imageHash,
         title: formData.title,
         body: formData.body,
-        link: formData.link
+        link: formData.link,
+        ctaType: formData.ctaType
       });
 
-      // Step 3: Create Ad
       setStatus('creating_ad');
       const adId = await createAd(accountId, token, {
         name: formData.name || formData.title,
         adsetId: formData.adsetId,
         creativeId: creativeId,
-        status: 'PAUSED' // As agreed, default to paused for safety
+        status: 'PAUSED'
       });
 
       setStatus('success');
@@ -108,16 +161,70 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
 
   if (!isOpen) return null;
 
+  // Folder logic for Automation Modal
+  const uniqueFolders = [...new Set(autoCreatives.map(c => c.folder_name))];
+  const filteredCreatives = autoCreatives.filter(c => c.folder_name === selectedFolder);
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
       backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
       display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(5px)'
     }}>
+      {/* Inner Automation Modal */}
+      {showAutoModal && (
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          background: 'var(--bg-dark)', border: '1px solid var(--theme-border)', borderRadius: '16px',
+          width: '90%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', padding: '2rem', zIndex: 10000,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 style={{ margin: 0, color: 'var(--theme-text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap color="var(--neon-green)" /> Importar da Automação
+            </h2>
+            <button onClick={() => setShowAutoModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+          </div>
+          
+          {autoLoading ? (
+            <p style={{ color: 'var(--text-muted)' }}>Carregando criativos do banco de dados...</p>
+          ) : (
+            <>
+              <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Selecione a Ação / Pasta</label>
+              <select 
+                value={selectedFolder} onChange={e => setSelectedFolder(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', marginBottom: '1.5rem' }}
+              >
+                {uniqueFolders.map(folder => <option key={folder} value={folder}>{folder}</option>)}
+              </select>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {filteredCreatives.map(item => (
+                  <div key={item.file_id} style={{ border: '1px solid var(--theme-border)', borderRadius: '12px', padding: '1rem', background: 'var(--theme-card-bg)' }}>
+                    <div style={{ fontWeight: 'bold', color: 'var(--theme-text)', marginBottom: '4px', fontSize: '0.95rem' }}>{item.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', maxHeight: '60px', overflow: 'hidden' }}>{item.body}</div>
+                    <button 
+                      onClick={() => handleAutoFill(item)}
+                      style={{ width: '100%', padding: '8px', background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', borderRadius: '6px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                    >
+                      <Download size={16} /> Usar Imagem e Texto
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {filteredCreatives.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Nenhum criativo encontrado nesta pasta.</p>}
+            </>
+          )}
+        </div>
+      )}
+
+
+      {/* Main Modal */}
       <div style={{
         background: 'var(--bg-dark)', border: '1px solid var(--theme-border)',
         borderRadius: '16px', width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto',
-        padding: '2rem', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        padding: '2rem', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        opacity: showAutoModal ? 0.4 : 1, pointerEvents: showAutoModal ? 'none' : 'auto'
       }}>
         <button 
           onClick={onClose}
@@ -126,9 +233,18 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
           <X size={24} />
         </button>
 
-        <h2 style={{ marginTop: 0, marginBottom: '2rem', color: 'var(--theme-text)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Upload size={24} color="var(--neon-green)" /> Subir Novo Criativo
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ margin: 0, color: 'var(--theme-text)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Upload size={24} color="var(--neon-green)" /> Subir Novo Criativo
+          </h2>
+          <button 
+            type="button"
+            onClick={openAutoModal}
+            style={{ background: 'var(--theme-border)', color: 'var(--theme-text)', border: 'none', padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            <Zap size={18} color="#FFD700" /> Puxar Automação
+          </button>
+        </div>
 
         {status === 'success' ? (
           <div style={{ textAlign: 'center', padding: '3rem 0' }}>
@@ -170,7 +286,6 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 placeholder="Ex: 1234567890"
                 style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', boxSizing: 'border-box' }}
               />
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Você encontra o Page ID na seção "Sobre" da sua Página.</p>
             </div>
 
             {/* Direita: Textos e Configurações */}
@@ -206,7 +321,6 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                     <option key={set.id} value={set.id}>{set.name}</option>
                   ))}
                 </select>
-                {loadingSets && <span style={{ fontSize: '0.8rem', color: 'var(--neon-green)' }}>Carregando...</span>}
               </div>
 
               <div>
@@ -236,13 +350,25 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 />
               </div>
 
-              <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>URL de Destino (Link)</label>
-                <input 
-                  type="url" name="link" value={formData.link} onChange={handleChange} required
-                  placeholder="https://seusite.com.br"
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', boxSizing: 'border-box' }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '8px' }}>
+                <div>
+                  <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Botão</label>
+                  <select 
+                    name="ctaType" value={formData.ctaType} onChange={handleChange} required
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', boxSizing: 'border-box' }}
+                  >
+                    <option value="LEARN_MORE">Saiba Mais</option>
+                    <option value="WHATSAPP_MESSAGE">WhatsApp</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>URL de Destino (Link)</label>
+                  <input 
+                    type="url" name="link" value={formData.link} onChange={handleChange} required
+                    placeholder="https://seusite.com.br"
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', boxSizing: 'border-box' }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -264,7 +390,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
                 }}
               >
                 {status === 'idle' || status === 'error' ? 'Publicar Anúncio' : 
-                 status === 'uploading' ? '1/3 Enviando Imagem...' : 
+                 status === 'uploading' ? '1/3 Trabalhando com Imagem...' : 
                  status === 'creating_creative' ? '2/3 Montando Criativo...' : 
                  '3/3 Finalizando Publicação...'}
               </button>

@@ -36,7 +36,7 @@ export const uploadAdImage = async (accountId, token, file) => {
   return data.images[firstImageKey].hash;
 };
 
-export const createAdCreative = async (accountId, token, { name, pageId, imageHash, title, body, link }) => {
+export const createAdCreative = async (accountId, token, { name, pageId, imageHash, title, body, link, ctaType = 'LEARN_MORE' }) => {
   const url = `https://graph.facebook.com/v19.0/act_${accountId}/adcreatives`;
   
   const objectStorySpec = {
@@ -47,7 +47,7 @@ export const createAdCreative = async (accountId, token, { name, pageId, imageHa
       message: body,
       name: title,
       call_to_action: {
-        type: 'LEARN_MORE',
+        type: ctaType,
         value: { link: link }
       }
     }

@@ -10,7 +10,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   const [preview, setPreview] = useState(null);
   
   const [formData, setFormData] = useState({
-    pageId: '',
+    pageId: localStorage.getItem('metaPageId') || '',
     adsetId: '',
     name: '',
     title: '',
@@ -18,6 +18,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     link: ''
   });
 
+  const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [status, setStatus] = useState('idle'); // idle, uploading, creating_creative, creating_ad, success, error
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -51,6 +52,9 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === 'pageId') {
+      localStorage.setItem('metaPageId', e.target.value);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -172,14 +176,34 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
             {/* Direita: Textos e Configurações */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Campanha / Conjunto de Anúncios *</label>
+                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Campanha *</label>
+                <select 
+                  value={selectedCampaignId} 
+                  onChange={(e) => {
+                    setSelectedCampaignId(e.target.value);
+                    setFormData({ ...formData, adsetId: '' });
+                  }} 
+                  required
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', marginBottom: '1rem' }}
+                >
+                  <option value="">Selecione a Campanha</option>
+                  {Array.from(new Set(adSets.map(s => s.campaign?.id)))
+                    .map(id => adSets.find(s => s.campaign?.id === id)?.campaign)
+                    .filter(Boolean)
+                    .map(camp => (
+                      <option key={camp.id} value={camp.id}>{camp.name}</option>
+                  ))}
+                </select>
+
+                <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Conjunto de Anúncios *</label>
                 <select 
                   name="adsetId" value={formData.adsetId} onChange={handleChange} required
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)' }}
+                  disabled={!selectedCampaignId}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--theme-border)', background: 'var(--theme-card-bg)', color: 'var(--theme-text)', opacity: selectedCampaignId ? 1 : 0.5 }}
                 >
                   <option value="">Selecione o Conjunto</option>
-                  {adSets.map(set => (
-                    <option key={set.id} value={set.id}>{set.campaign?.name} - {set.name}</option>
+                  {adSets.filter(s => s.campaign?.id === selectedCampaignId).map(set => (
+                    <option key={set.id} value={set.id}>{set.name}</option>
                   ))}
                 </select>
                 {loadingSets && <span style={{ fontSize: '0.8rem', color: 'var(--neon-green)' }}>Carregando...</span>}

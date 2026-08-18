@@ -39,9 +39,10 @@ function App() {
 
   const [clients, setClients] = useState(loadInitialClients());
   const [selectedClientId, setSelectedClientId] = useState(localStorage.getItem('selectedClientId') || (clients.length > 0 ? clients[0].id : ''));
-  const activeClient = clients.find(c => c.id === selectedClientId) || clients[0] || { accountId: import.meta.env.VITE_META_ACCOUNT_ID || '', token: import.meta.env.VITE_META_TOKEN || '', pageId: '' };
+  const activeClient = clients.find(c => c.id === selectedClientId) || clients[0] || { accountId: import.meta.env.VITE_META_ACCOUNT_ID || '', token: '', pageId: '' };
 
   const [geminiApiKey, setGeminiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
+  const [globalMetaToken, setGlobalMetaToken] = useState(localStorage.getItem('globalMetaToken') || import.meta.env.VITE_META_TOKEN || '');
 
   // Save clients to localStorage whenever it changes
   useEffect(() => {
@@ -62,9 +63,14 @@ function App() {
     setGeminiApiKey(gemini);
   };
 
+  const saveGlobalMetaToken = (tok) => {
+    localStorage.setItem('globalMetaToken', tok);
+    setGlobalMetaToken(tok);
+  };
+
   // Alias para manter o resto do código funcionando
   const accountId = activeClient?.accountId;
-  const token = activeClient?.token;
+  const token = activeClient?.token || globalMetaToken;
   const pageId = activeClient?.pageId;
 
 
@@ -366,6 +372,8 @@ function App() {
           setClients={setClients}
           geminiApiKey={geminiApiKey}
           onSaveGemini={saveGeminiKey}
+          globalMetaToken={globalMetaToken}
+          onSaveGlobalToken={saveGlobalMetaToken}
         />
       )}
 

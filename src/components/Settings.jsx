@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 
-const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini }) => {
+const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini, globalMetaToken, onSaveGlobalToken }) => {
   const [localGeminiKey, setLocalGeminiKey] = useState(geminiApiKey || '');
+  const [localGlobalToken, setLocalGlobalToken] = useState(globalMetaToken || '');
   
   const [isEditing, setIsEditing] = useState(false);
   const [currentClient, setCurrentClient] = useState({ id: '', name: '', accountId: '', token: '', pageId: '' });
 
-  const handleSaveGemini = () => {
+  const handleSaveGlobal = () => {
     onSaveGemini(localGeminiKey);
-    alert('Chave do Gemini salva!');
+    if (onSaveGlobalToken) onSaveGlobalToken(localGlobalToken);
+    alert('Configurações globais salvas!');
   };
 
   const handleAddOrEditClient = () => {
-    if (!currentClient.name || !currentClient.accountId || !currentClient.token) {
-      alert("Preencha Nome, Conta e Token!");
+    if (!currentClient.name || !currentClient.accountId) {
+      alert("Preencha Nome e Conta!");
       return;
     }
 
@@ -102,7 +104,7 @@ const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini }) => {
               <input type="text" value={currentClient.accountId} onChange={e => setCurrentClient({...currentClient, accountId: e.target.value})} placeholder="Ex: 484404834087570" style={inputStyle} />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Access Token (System User Meta)</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Access Token (Opcional se usar Token Universal)</label>
               <input type="password" value={currentClient.token} onChange={e => setCurrentClient({...currentClient, token: e.target.value})} placeholder="EAA..." style={inputStyle} />
             </div>
             <div>
@@ -120,17 +122,24 @@ const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini }) => {
         </div>
       )}
 
-      <h3 style={{ marginBottom: '1.5rem', marginTop: '3rem', color: 'var(--text-main)', fontSize: '1.4rem' }}>Integração Inteligência Artificial</h3>
+      <h3 style={{ marginBottom: '1.5rem', marginTop: '3rem', color: 'var(--text-main)', fontSize: '1.4rem' }}>Configurações Globais</h3>
+      
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Token Universal (System User Meta)</label>
+        <input type="password" value={localGlobalToken} onChange={(e) => setLocalGlobalToken(e.target.value)} placeholder="EAA..." style={inputStyle} />
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Se preenchido, os clientes que não tiverem um token específico usarão este token global.</p>
+      </div>
+
       <div style={{ marginBottom: '2rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Google Gemini API Key (Global)</label>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Google Gemini API Key</label>
         <input type="password" value={localGeminiKey} onChange={(e) => setLocalGeminiKey(e.target.value)} placeholder="AIza..." style={inputStyle} />
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Necessária para gerar os textos da aba Assistente I.A.</p>
       </div>
       <button 
-        onClick={handleSaveGemini}
+        onClick={handleSaveGlobal}
         style={{ background: 'rgba(255,255,255,0.1)', color: 'white', padding: '10px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', cursor: 'pointer' }}
       >
-        Salvar Chave I.A.
+        Salvar Configurações Globais
       </button>
 
     </div>

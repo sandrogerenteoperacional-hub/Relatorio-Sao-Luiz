@@ -3,7 +3,7 @@ import { X, Upload, CheckCircle2, AlertCircle, Image as ImageIcon, Zap, Download
 import { fetchAdSetsForCampaigns, uploadAdImage, createAdCreative, createAd } from '../services/metaUploadApi';
 import { fetchAutomationCreatives, fetchDriveImageAsFile } from '../services/automationIntegration';
 
-export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
+export const AdCreatorModal = ({ isOpen, onClose, accountId, token, pageId }) => {
   const [adSets, setAdSets] = useState([]);
   const [loadingSets, setLoadingSets] = useState(false);
   
@@ -13,7 +13,7 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
   const [cardsData, setCardsData] = useState([]); // {title, body, file_id}
   
   const [formData, setFormData] = useState({
-    pageId: localStorage.getItem('metaPageId') || '102968215747959',
+    pageId: pageId || localStorage.getItem('metaPageId') || '102968215747959',
     adsetId: '',
     name: '',
     title: '',
@@ -21,6 +21,12 @@ export const AdCreatorModal = ({ isOpen, onClose, accountId, token }) => {
     link: '',
     ctaType: 'LEARN_MORE'
   });
+
+  useEffect(() => {
+    if (pageId) {
+      setFormData(prev => ({ ...prev, pageId }));
+    }
+  }, [pageId]);
 
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [status, setStatus] = useState('idle'); // idle, uploading, creating_creative, creating_ad, success, error

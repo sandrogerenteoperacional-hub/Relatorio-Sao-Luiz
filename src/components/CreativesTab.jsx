@@ -5,7 +5,7 @@ import CustomDateFilter from './CustomDateFilter';
 import { fetchAdLevelInsights, fetchAdCreativesDetails, getObjectiveGroup, extractFunnelAndResults } from '../services/metaApi';
 import { AdCreatorModal } from './AdCreatorModal';
 
-export const CreativesTab = ({ accountId, token }) => {
+export const CreativesTab = ({ accountId, token, pageId }) => {
   const [creatives, setCreatives] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,7 +108,7 @@ export const CreativesTab = ({ accountId, token }) => {
 
   return (
     <div>
-      <AdCreatorModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} accountId={accountId} token={token} />
+      <AdCreatorModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} accountId={accountId} token={token} pageId={pageId} />
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ color: 'white', margin: 0 }}>Biblioteca de Criativos</h1>

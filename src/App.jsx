@@ -22,19 +22,51 @@ function App() {
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState('');
   
-  // Tenta pegar do localStorage primeiro, se não tiver, pega da variável de ambiente (Vercel)
-  const [accountId, setAccountId] = useState(localStorage.getItem('metaAccountId') || import.meta.env.VITE_META_ACCOUNT_ID || '');
-  const [token, setToken] = useState(localStorage.getItem('metaToken') || import.meta.env.VITE_META_TOKEN || '');
+  // Multi-client state
+  const loadInitialClients = () => {
+    const saved = localStorage.getItem('metaClients');
+    if (saved) return JSON.parse(saved);
+    // Migração de usuário antigo:
+    const oldId = localStorage.getItem('metaAccountId');
+    const oldToken = localStorage.getItem('metaToken');
+    if (oldId && oldToken) {
+      const defaultClient = { id: '1', name: 'Cliente Padrão', accountId: oldId, token: oldToken, pageId: localStorage.getItem('metaPageId') || '' };
+      localStorage.setItem('metaClients', JSON.stringify([defaultClient]));
+      return [defaultClient];
+    }
+    return [];
+  };
+
+  const [clients, setClients] = useState(loadInitialClients());
+  const [selectedClientId, setSelectedClientId] = useState(localStorage.getItem('selectedClientId') || (clients.length > 0 ? clients[0].id : ''));
+  const activeClient = clients.find(c => c.id === selectedClientId) || clients[0] || { accountId: import.meta.env.VITE_META_ACCOUNT_ID || '', token: import.meta.env.VITE_META_TOKEN || '', pageId: '' };
+
   const [geminiApiKey, setGeminiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
 
-  const saveSettings = (id, tok, gemini) => {
-    localStorage.setItem('metaAccountId', id);
-    localStorage.setItem('metaToken', tok);
-    if (gemini) localStorage.setItem('geminiApiKey', gemini);
-    setAccountId(id);
-    setToken(tok);
-    if (gemini) setGeminiApiKey(gemini);
+  // Save clients to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('metaClients', JSON.stringify(clients));
+    if (clients.length > 0 && !clients.find(c => c.id === selectedClientId)) {
+      setSelectedClientId(clients[0].id);
+    }
+  }, [clients, selectedClientId]);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      localStorage.setItem('selectedClientId', selectedClientId);
+    }
+  }, [selectedClientId]);
+
+  const saveGeminiKey = (gemini) => {
+    localStorage.setItem('geminiApiKey', gemini);
+    setGeminiApiKey(gemini);
   };
+
+  // Alias para manter o resto do código funcionando
+  const accountId = activeClient?.accountId;
+  const token = activeClient?.token;
+  const pageId = activeClient?.pageId;
+
 
   const getDates = () => {
     const today = new Date();
@@ -250,20 +282,40 @@ function App() {
         <button className={`tab-button ${activeTab === 7 ? 'active' : ''}`} onClick={() => setActiveTab(7)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <SettingsIcon size={16} /> Integração API
         </button>
-        <button 
-          onClick={() => loadData(!!token)}
-          className="tab-button"
-          style={{ 
-            marginLeft: 'auto', 
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: loading ? 'white' : 'var(--text-muted)',
-            fontWeight: loading ? 'bold' : '600'
-          }}
-          title="Buscar dados mais recentes da Meta"
-          disabled={loading}
-        >
-          <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> {loading ? "Sincronizando..." : "Recarregar API"}
-        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {clients.length > 0 && (
+            <select 
+              value={selectedClientId} 
+              onChange={(e) => setSelectedClientId(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: 'white',
+                fontFamily: 'inherit',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              {clients.map(c => <option key={c.id} value={c.id} style={{ color: 'black' }}>{c.name}</option>)}
+            </select>
+          )}
+          <button 
+            onClick={() => loadData(!!token)}
+            className="tab-button"
+            style={{ 
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: loading ? 'white' : 'var(--text-muted)',
+              fontWeight: loading ? 'bold' : '600'
+            }}
+            title="Buscar dados mais recentes da Meta"
+            disabled={loading}
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> {loading ? "Sincronizando..." : "Recarregar API"}
+          </button>
+        </div>
       </div>
 
       {!data && activeTab !== 7 && !loading && (
@@ -280,7 +332,7 @@ function App() {
       {data && (
         <>
           <div style={{ display: activeTab === 4 ? 'block' : 'none' }}>
-            <CreativesTab accountId={accountId} token={token} creatives={data?.data7Days?.current?.creatives || []} />
+            <CreativesTab accountId={accountId} token={token} pageId={pageId} creatives={data?.data7Days?.current?.creatives || []} />
           </div>
           {activeTab === 9 && <MonthlyReportTab accountId={accountId} token={token} dataMonth={data?.dataMonth} dateRanges={reportDates} />}
           <div style={{ display: activeTab === 6 ? 'block' : 'none' }}>
@@ -310,12 +362,10 @@ function App() {
 
       {activeTab === 7 && (
         <Settings 
-          accountId={accountId} 
-          token={token} 
+          clients={clients}
+          setClients={setClients}
           geminiApiKey={geminiApiKey}
-          onSave={saveSettings} 
-          onSync={handleManualSync}
-          isSyncing={loading}
+          onSaveGemini={saveGeminiKey}
         />
       )}
 

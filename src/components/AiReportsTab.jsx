@@ -4,7 +4,7 @@ import { fetchMetaAdsData, fetchDailyInsights, fetchAdLevelInsights, fetchAdCrea
 import { Bot, FileText, Calendar, Copy, Check, MessageSquare, AlertCircle, Download, Save, History } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 
-export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
+export const AiReportsTab = ({ accountId, token, geminiApiKey, windsorApiKey }) => {
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('');
   const [generatedText, setGeneratedText] = useState('');
@@ -54,7 +54,7 @@ export const AiReportsTab = ({ accountId, token, geminiApiKey }) => {
 
   const fetchBaseData = async (startDate, endDate) => {
     const campaignsStatus = await fetchCampaignsStatus(accountId, token);
-    const raw = await fetchMetaAdsData(accountId, token, startDate, endDate);
+    const raw = await fetchMetaAdsData(accountId, token, startDate, endDate, windsorApiKey);
     const processed = processApiData(raw, campaignsStatus);
     
     const adInsights = await fetchAdLevelInsights(accountId, token, startDate, endDate);

@@ -31,7 +31,7 @@ const MiniChart = ({ title, data, dataKey, color, format }) => (
   </div>
 );
 
-export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) => {
+export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges, windsorApiKey }) => {
   const [dailyData, setDailyData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,11 +39,11 @@ export const MonthlyReportTab = ({ accountId, token, dataMonth, dateRanges }) =>
 
   useEffect(() => {
     const loadDaily = async () => {
-      if (!accountId || !token || !dateRanges?.current) return;
+      if (!accountId || (!token && !windsorApiKey) || !dateRanges?.current) return;
       try {
         setLoading(true);
         const { sinceMonth, untilMonth } = dateRanges.current;
-        const daily = await fetchDailyInsights(accountId, token, sinceMonth, untilMonth);
+        const daily = await fetchDailyInsights(accountId, token, sinceMonth, untilMonth, windsorApiKey);
         
         const timeline = daily.map(day => {
           const spend = parseFloat(day.spend || 0);

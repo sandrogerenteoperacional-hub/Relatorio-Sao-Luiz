@@ -349,14 +349,14 @@ function App() {
           <div style={{ display: activeTab === 4 ? 'block' : 'none' }}>
             <CreativesTab accountId={accountId} token={token} pageId={pageId} creatives={data?.data7Days?.current?.creatives || []} />
           </div>
-          {activeTab === 9 && <MonthlyReportTab accountId={accountId} token={token} dataMonth={data?.dataMonth} dateRanges={reportDates} />}
+          {activeTab === 9 && <MonthlyReportTab accountId={accountId} token={token} windsorApiKey={windsorApiKey} dataMonth={data?.dataMonth} dateRanges={reportDates} />}
           <div style={{ display: activeTab === 6 ? 'block' : 'none' }}>
-            <ChartsTab accountId={accountId} token={token} />
+            <ChartsTab accountId={accountId} token={token} windsorApiKey={windsorApiKey} />
           </div>
         </>
       )}
       
-      {activeTab === 8 && <AiReportsTab accountId={accountId} token={token} geminiApiKey={geminiApiKey} />}
+      {activeTab === 8 && <AiReportsTab accountId={accountId} token={token} windsorApiKey={windsorApiKey} geminiApiKey={geminiApiKey} />}
 
       {activeTab === 5 && (
         <div>

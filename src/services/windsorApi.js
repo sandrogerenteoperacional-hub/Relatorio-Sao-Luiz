@@ -7,29 +7,33 @@ const mapWindsorToMetaFormat = (row) => {
   const actions = [];
   const costs = [];
   
-  if (row.purchases) {
-    actions.push({ action_type: 'purchase', value: row.purchases.toString() });
+  const purchases = row.purchases || row.actions_purchase || row.actions_offsite_conversion_fb_pixel_purchase || 0;
+  if (purchases) {
+    actions.push({ action_type: 'purchase', value: purchases.toString() });
   }
-  if (row.leads) {
-    actions.push({ action_type: 'lead', value: row.leads.toString() });
+  
+  const leads = row.leads || row.actions_lead || 0;
+  if (leads) {
+    actions.push({ action_type: 'lead', value: leads.toString() });
   }
   // No windsor, podemos usar uma das colunas para representar msgs.
-  if (row.onsite_conversion_messaging_conversation_started_7d || row.messaging_conversations_started) {
-    const msgs = row.onsite_conversion_messaging_conversation_started_7d || row.messaging_conversations_started;
+  if (row.onsite_conversion_messaging_conversation_started_7d || row.messaging_conversations_started || row.actions_onsite_conversion_messaging_conversation_started_7d) {
+    const msgs = row.onsite_conversion_messaging_conversation_started_7d || row.messaging_conversations_started || row.actions_onsite_conversion_messaging_conversation_started_7d;
     actions.push({ action_type: 'messaging_conversation_started', value: msgs.toString() });
   }
-  if (row.landing_page_views) {
-    actions.push({ action_type: 'landing_page_view', value: row.landing_page_views.toString() });
+  if (row.landing_page_views || row.actions_landing_page_view) {
+    const views = row.landing_page_views || row.actions_landing_page_view;
+    actions.push({ action_type: 'landing_page_view', value: views.toString() });
   }
-  if (row.outbound_clicks || row.link_clicks || row.inline_link_clicks) {
-    const lclicks = row.outbound_clicks || row.link_clicks || row.inline_link_clicks;
+  if (row.outbound_clicks || row.link_clicks || row.inline_link_clicks || row.actions_link_click) {
+    const lclicks = row.outbound_clicks || row.link_clicks || row.inline_link_clicks || row.actions_link_click;
     actions.push({ action_type: 'link_click', value: lclicks.toString() });
   }
 
   // Preenche costs baseado nas divisões do spend, caso não venha roas/cpa já feitos
   // Para manter a compatibilidade com getActionCost
-  if (row.purchases && row.spend) costs.push({ action_type: 'purchase', value: (row.spend / row.purchases).toString() });
-  if (row.leads && row.spend) costs.push({ action_type: 'lead', value: (row.spend / row.leads).toString() });
+  if (purchases && row.spend) costs.push({ action_type: 'purchase', value: (row.spend / purchases).toString() });
+  if (leads && row.spend) costs.push({ action_type: 'lead', value: (row.spend / leads).toString() });
   
   return {
     campaign_name: row.campaign,
@@ -49,7 +53,7 @@ const mapWindsorToMetaFormat = (row) => {
   };
 };
 
-export const fetchWindsorData = async (accountId, apiKey, since, until, fields = 'campaign,spend,clicks,impressions,reach,objective,roas,purchases,leads,outbound_clicks,landing_page_views,inline_link_clicks,onsite_conversion_messaging_conversation_started_7d') => {
+export const fetchWindsorData = async (accountId, apiKey, since, until, fields = 'campaign,spend,clicks,impressions,reach,objective,roas,purchases,leads,outbound_clicks,landing_page_views,inline_link_clicks,onsite_conversion_messaging_conversation_started_7d,actions_purchase,actions_offsite_conversion_fb_pixel_purchase,actions_lead,actions_link_click') => {
   const params = new URLSearchParams({
     api_key: apiKey,
     date_from: since,

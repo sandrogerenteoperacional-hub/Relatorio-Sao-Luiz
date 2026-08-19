@@ -27,7 +27,7 @@ export const fetchMetaAdsData = async (accountId, token, since, until, windsorAp
 export const fetchDailyInsights = async (accountId, token, since, until, windsorApiKey = null) => {
   if (windsorApiKey) {
     // Windsor request com fields limitados para agilizar (inclui 'date' por padrão)
-    return await fetchWindsorData(accountId, windsorApiKey, since, until, 'date,spend,clicks,impressions,reach,leads,onsite_conversion_messaging_conversation_started_7d');
+    return await fetchWindsorData(accountId, windsorApiKey, since, until, 'date,spend,clicks,impressions,reach,leads,onsite_conversion_messaging_conversation_started_7d,actions_purchase,actions_offsite_conversion_fb_pixel_purchase,actions_lead,actions_link_click');
   }
 
   const url = `https://graph.facebook.com/v19.0/act_${accountId}/insights`;

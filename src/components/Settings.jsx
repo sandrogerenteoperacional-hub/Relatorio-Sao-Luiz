@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 
-const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini, globalMetaToken, onSaveGlobalToken }) => {
+const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini, globalMetaToken, onSaveGlobalToken, windsorApiKey, onSaveWindsorKey }) => {
   const [localGeminiKey, setLocalGeminiKey] = useState(geminiApiKey || '');
   const [localGlobalToken, setLocalGlobalToken] = useState(globalMetaToken || '');
+  const [localWindsorKey, setLocalWindsorKey] = useState(windsorApiKey || '');
   
   const [isEditing, setIsEditing] = useState(false);
   const [currentClient, setCurrentClient] = useState({ id: '', name: '', accountId: '', token: '', pageId: '' });
@@ -11,6 +12,7 @@ const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini, globalMetaT
   const handleSaveGlobal = () => {
     onSaveGemini(localGeminiKey);
     if (onSaveGlobalToken) onSaveGlobalToken(localGlobalToken);
+    if (onSaveWindsorKey) onSaveWindsorKey(localWindsorKey);
     alert('Configurações globais salvas!');
   };
 
@@ -124,10 +126,16 @@ const Settings = ({ clients, setClients, geminiApiKey, onSaveGemini, globalMetaT
 
       <h3 style={{ marginBottom: '1.5rem', marginTop: '3rem', color: 'var(--text-main)', fontSize: '1.4rem' }}>Configurações Globais</h3>
       
+      <div style={{ marginBottom: '1.5rem', background: 'rgba(50, 100, 255, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(50, 100, 255, 0.3)' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Windsor.ai API Key (Relatórios Rápidos)</label>
+        <input type="password" value={localWindsorKey} onChange={(e) => setLocalWindsorKey(e.target.value)} placeholder="db5b13..." style={inputStyle} />
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Opcional. Se preenchido, o painel usará o Windsor.ai para gerar os gráficos (dispensa token Meta para visualização).</p>
+      </div>
+
       <div style={{ marginBottom: '1.5rem' }}>
         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Token Universal (System User Meta)</label>
         <input type="password" value={localGlobalToken} onChange={(e) => setLocalGlobalToken(e.target.value)} placeholder="EAA..." style={inputStyle} />
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Se preenchido, os clientes que não tiverem um token específico usarão este token global.</p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Se preenchido, os clientes que não tiverem um token específico usarão este token global para a Biblioteca de Criativos.</p>
       </div>
 
       <div style={{ marginBottom: '2rem' }}>

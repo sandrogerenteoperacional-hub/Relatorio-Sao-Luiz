@@ -10,7 +10,7 @@ import { CustomFunnel } from './CustomFunnel';
 
 const COLORS = ['#00FF80', '#A855F7', '#3B82F6', '#EF4444', '#F59E0B', '#ec4899'];
 
-export const ChartsTab = ({ accountId, token }) => {
+export const ChartsTab = ({ accountId, token, windsorApiKey }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -21,12 +21,13 @@ export const ChartsTab = ({ accountId, token }) => {
   const [selectedCampaign, setSelectedCampaign] = useState('all');
 
   const formatDateStr = (dateString) => {
+    if (!dateString) return '';
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}`;
   };
 
   const handleSearchDates = async (startDate, endDate) => {
-    if (!accountId || !token) {
+    if (!accountId || (!token && !windsorApiKey)) {
       setError('Conta não configurada.');
       return;
     }
@@ -35,10 +36,26 @@ export const ChartsTab = ({ accountId, token }) => {
       setLoading(true);
       setError('');
       
-      const daily = await fetchDailyInsights(accountId, token, startDate, endDate);
+      const daily = await fetchDailyInsights(accountId, token, startDate, endDate, windsorApiKey);
       
-      const timeline = daily.map(day => {
-        const spend = parseFloat(day.spend || 0);
+      // Quando vem do Windsor, o array de daily pode ter várias linhas por dia (uma por campanha). Precisamos agrupar por data.
+      const dailyGrouped = {};
+      daily.forEach(day => {
+        const dateKey = day.date_start;
+        if (!dateKey) return;
+        
+        if (!dailyGrouped[dateKey]) {
+          dailyGrouped[dateKey] = { date_start: dateKey, spend: 0, actions: [] };
+        }
+        
+        dailyGrouped[dateKey].spend += parseFloat(day.spend || 0);
+        if (day.actions) {
+          dailyGrouped[dateKey].actions.push(...day.actions);
+        }
+      });
+      
+      const timeline = Object.values(dailyGrouped).map(day => {
+        const spend = day.spend;
         let leads = 0;
         if (day.actions) {
            day.actions.forEach(act => {
@@ -52,10 +69,15 @@ export const ChartsTab = ({ accountId, token }) => {
           Investimento: spend,
           Leads: leads
         };
+      }).sort((a, b) => {
+         const [d1, m1] = a.date.split('/');
+         const [d2, m2] = b.date.split('/');
+         return new Date(`2000-${m1}-${d1}`) - new Date(`2000-${m2}-${d2}`);
       });
+      
       setTimelineData(timeline);
 
-      const campaigns = await fetchMetaAdsData(accountId, token, startDate, endDate);
+      const campaigns = await fetchMetaAdsData(accountId, token, startDate, endDate, windsorApiKey);
       setCampaignsData(campaigns);
       
       let totalImpressions = 0;

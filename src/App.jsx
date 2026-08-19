@@ -43,6 +43,7 @@ function App() {
 
   const [geminiApiKey, setGeminiApiKey] = useState(localStorage.getItem('geminiApiKey') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [globalMetaToken, setGlobalMetaToken] = useState(localStorage.getItem('globalMetaToken') || import.meta.env.VITE_META_TOKEN || '');
+  const [windsorApiKey, setWindsorApiKey] = useState(localStorage.getItem('windsorApiKey') || '');
 
   // Save clients to localStorage whenever it changes
   useEffect(() => {
@@ -66,6 +67,11 @@ function App() {
   const saveGlobalMetaToken = (tok) => {
     localStorage.setItem('globalMetaToken', tok);
     setGlobalMetaToken(tok);
+  };
+
+  const saveWindsorApiKey = (key) => {
+    localStorage.setItem('windsorApiKey', key);
+    setWindsorApiKey(key);
   };
 
   // Alias para manter o resto do código funcionando
@@ -144,33 +150,34 @@ function App() {
       const targetId = overrideId || accountId;
       const targetToken = overrideToken || token;
 
-      if (targetId && targetToken) {
+      if (targetId && (targetToken || windsorApiKey)) {
         try {
           const dates = getDates();
           setReportDates(dates);
           const { current: c, previous: p } = dates;
           
-          console.log("Fetching current and previous periods from Meta API...");
+          console.log("Fetching current and previous periods...");
           
           // Precisamos do status das campanhas primeiro para cruzar depois
-          const campaignsStatus = await fetchCampaignsStatus(targetId, targetToken);
+          const campaignsStatus = targetToken ? await fetchCampaignsStatus(targetId, targetToken) : [];
 
           // Buscar tudo paralelamente para ser rápido
           const results = await Promise.all([
-            fetchMetaAdsData(targetId, targetToken, c.since7Days, c.until7Days),
-            fetchMetaAdsData(targetId, targetToken, c.since30Days, c.until30Days),
-            fetchMetaAdsData(targetId, targetToken, c.sinceMonth, c.untilMonth),
-            fetchMetaAdsData(targetId, targetToken, c.sinceLastMonth, c.untilLastMonth),
+            fetchMetaAdsData(targetId, targetToken, c.since7Days, c.until7Days, windsorApiKey),
+            fetchMetaAdsData(targetId, targetToken, c.since30Days, c.until30Days, windsorApiKey),
+            fetchMetaAdsData(targetId, targetToken, c.sinceMonth, c.untilMonth, windsorApiKey),
+            fetchMetaAdsData(targetId, targetToken, c.sinceLastMonth, c.untilLastMonth, windsorApiKey),
             
-            fetchMetaAdsData(targetId, targetToken, p.since7Days, p.until7Days),
-            fetchMetaAdsData(targetId, targetToken, p.since30Days, p.until30Days),
-            fetchMetaAdsData(targetId, targetToken, p.sinceMonth, p.untilMonth),
-            fetchMetaAdsData(targetId, targetToken, p.sinceLastMonth, p.untilLastMonth)
+            fetchMetaAdsData(targetId, targetToken, p.since7Days, p.until7Days, windsorApiKey),
+            fetchMetaAdsData(targetId, targetToken, p.since30Days, p.until30Days, windsorApiKey),
+            fetchMetaAdsData(targetId, targetToken, p.sinceMonth, p.untilMonth, windsorApiKey),
+            fetchMetaAdsData(targetId, targetToken, p.sinceLastMonth, p.untilLastMonth, windsorApiKey)
           ]);
           
           const process = (raw) => processApiData(raw, campaignsStatus);
 
           const loadCreativesForPeriod = async (since, until) => {
+            if (!targetToken) return []; // Windsor não retorna detalhes de criativos (imagens, títulos) com facilidade.
             const adInsights = await fetchAdLevelInsights(targetId, targetToken, since, until);
             const topAds = adInsights.sort((a, b) => (b.spend || 0) - (a.spend || 0)).slice(0, 12);
             const adIds = topAds.map(ad => ad.ad_id);
@@ -199,8 +206,8 @@ function App() {
           setActiveTab(0);
           return;
         } catch (apiError) {
-          console.error("Erro API Meta:", apiError);
-          setErrorMsg(apiError.message || "Erro na API do Meta. Verifique o Token e Conta.");
+          console.error("Erro API:", apiError);
+          setErrorMsg(apiError.message || "Erro na API. Verifique o Token, Account ID ou Windsor API Key.");
           if (forceApi) {
             setLoading(false);
             return;
@@ -208,8 +215,8 @@ function App() {
         }
       }
 
-      if (!targetId || !targetToken) {
-        throw new Error('Configure o Account ID e Token na aba Integração API.');
+      if (!targetId || (!targetToken && !windsorApiKey)) {
+        throw new Error('Configure o Account ID e Token/Windsor Key na aba Integração API.');
       }
       
     } catch (error) {
@@ -230,7 +237,7 @@ function App() {
   };
 
   const loadCustomData = async (startDate, endDate) => {
-    if (!accountId || !token) {
+    if (!accountId || (!token && !windsorApiKey)) {
       setCustomError('Configure a Integração API primeiro.');
       return;
     }
@@ -238,16 +245,18 @@ function App() {
       setCustomLoading(true);
       setCustomError('');
       
-      const campaignsStatus = await fetchCampaignsStatus(accountId, token);
-      const raw = await fetchMetaAdsData(accountId, token, startDate, endDate);
+      const campaignsStatus = token ? await fetchCampaignsStatus(accountId, token) : [];
+      const raw = await fetchMetaAdsData(accountId, token, startDate, endDate, windsorApiKey);
       const processed = processApiData(raw, campaignsStatus);
       
-      const adInsights = await fetchAdLevelInsights(accountId, token, startDate, endDate);
-      const topAds = adInsights.sort((a, b) => (b.spend || 0) - (a.spend || 0)).slice(0, 12);
-      const adIds = topAds.map(ad => ad.ad_id);
       let creatives = [];
-      if (adIds.length > 0) {
-        creatives = await fetchAdCreativesDetails(accountId, token, adIds);
+      if (token) {
+        const adInsights = await fetchAdLevelInsights(accountId, token, startDate, endDate);
+        const topAds = adInsights.sort((a, b) => (b.spend || 0) - (a.spend || 0)).slice(0, 12);
+        const adIds = topAds.map(ad => ad.ad_id);
+        if (adIds.length > 0) {
+          creatives = await fetchAdCreativesDetails(accountId, token, adIds);
+        }
       }
       
       setCustomData({ current: { ...processed, creatives }, previous: null });
@@ -374,9 +383,10 @@ function App() {
           onSaveGemini={saveGeminiKey}
           globalMetaToken={globalMetaToken}
           onSaveGlobalToken={saveGlobalMetaToken}
+          windsorApiKey={windsorApiKey}
+          onSaveWindsorKey={saveWindsorApiKey}
         />
       )}
-
     </div>
   );
 }

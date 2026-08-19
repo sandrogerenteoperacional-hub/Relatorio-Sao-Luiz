@@ -4,9 +4,10 @@ import { Target, TrendingUp, AlertTriangle, CheckCircle, Activity, Award, BarCha
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val || 0);
+const formatDecimal = (val) => (val || 0).toFixed(2).replace('.', ',');
 
 // --- 1. CAPA / RESUMO EXECUTIVO ---
-const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaigns }) => {
+const ExecutiveSummary = ({ summary, previousSummary, accountId, clientName, label, campaigns }) => {
   const isHealthy = summary.health === 'BOM';
   const isCritical = summary.health === 'CRÍTICO';
   
@@ -18,30 +19,29 @@ const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaign
     const rows = campaigns.map(c => [
       `"${c.name}"`,
       `"${c.group}"`,
-      `"${c.status}"`,
-      c.spend.toFixed(2),
+      `"${c.status || 'ACTIVE'}"`,
+      formatDecimal(c.spend),
       c.impressions,
       c.clicks,
       c.reach,
-      c.frequency.toFixed(2),
-      c.cpc.toFixed(2),
-      c.cpm.toFixed(2),
-      c.ctr.toFixed(2),
+      formatDecimal(c.frequency),
+      formatDecimal(c.cpc),
+      formatDecimal(c.cpm),
+      formatDecimal(c.ctr),
       c.result,
       `"${c.resultName}"`,
-      c.cpa.toFixed(2),
-      `"${c.rawActions ? c.rawActions.replace(/"/g, '""') : ''}"`
-    ].join(','));
+      formatDecimal(c.cpa),
+      `"${c._debug_actions_raw || ''}"`
+    ]);
     
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    // Adicionar BOM para Excel abrir UTF-8 corretamente
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `relatorio_meta_ads_${accountId}_${new Date().toISOString().split('T')[0]}.csv`;
-    link.style.display = 'none';
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + headers.join(";") + "\n" 
+      + rows.map(e => e.join(";")).join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `relatorio_meta_ads_${accountId}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -73,7 +73,7 @@ const ExecutiveSummary = ({ summary, previousSummary, accountId, label, campaign
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'var(--theme-text)', fontWeight: '800', letterSpacing: '-0.02em' }}>Relatório Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>São Luiz</span></h1>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2.2rem', color: 'var(--theme-text)', fontWeight: '800', letterSpacing: '-0.02em' }}>Relatório Premium <span style={{ color: 'var(--neon-green)', textShadow: '0 0 15px var(--neon-green-glow)' }}>{clientName || 'São Luiz'}</span></h1>
           <div style={{ color: 'var(--text-muted)', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <span>CONTA: <strong>ACT_{accountId}</strong></span>
             <span>•</span>
@@ -392,12 +392,12 @@ const InsightsAndRecommendations = ({ data }) => {
   );
 };
 
-export const PresentationReport = ({ currentData, previousData, accountId, label, dateRanges, hideAlerts }) => {
+export const PresentationReport = ({ currentData, previousData, accountId, clientName, label, dateRanges, hideAlerts }) => {
   if (!currentData) return null;
 
   return (
-    <div style={{ animation: 'fadeInUp 0.5s ease', width: '100%' }}>
-      <ExecutiveSummary summary={currentData.summary} previousSummary={previousData?.summary} accountId={accountId} label={label} campaigns={currentData.campaigns} />
+    <div style={{ animation: 'fadeInUp 0.5s ease', width: '100%', padding: '0 10px' }}>
+      <ExecutiveSummary summary={currentData.summary} previousSummary={previousData?.summary} accountId={accountId} clientName={clientName} label={label} campaigns={currentData.campaigns} />
       <AccountOverview objectives={currentData.objectives} summary={currentData.summary} />
       <ObjectiveBreakdown objectives={currentData.objectives} />
       <CampaignRanking campaigns={currentData.campaigns} />

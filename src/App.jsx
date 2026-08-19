@@ -339,10 +339,10 @@ function App() {
          </div>
       )}
 
-      {data && activeTab === 0 && <PresentationReport accountId={accountId} label="Últimos 7 Dias" currentData={data.data7Days.current} previousData={data.data7Days.previous} dateRanges={{ current: { since: reportDates?.current.since7Days, until: reportDates?.current.until7Days }, previous: { since: reportDates?.previous.since7Days, until: reportDates?.previous.until7Days } }} />}
-      {data && activeTab === 1 && <PresentationReport accountId={accountId} label="Últimos 30 Dias" currentData={data.data30Days.current} previousData={data.data30Days.previous} dateRanges={{ current: { since: reportDates?.current.since30Days, until: reportDates?.current.until30Days }, previous: { since: reportDates?.previous.since30Days, until: reportDates?.previous.until30Days } }} />}
-      {data && activeTab === 2 && <PresentationReport accountId={accountId} label="Este Mês (Atual)" currentData={data.dataMonth.current} previousData={data.dataMonth.previous} dateRanges={{ current: { since: reportDates?.current.sinceMonth, until: reportDates?.current.untilMonth }, previous: { since: reportDates?.previous.sinceMonth, until: reportDates?.previous.untilMonth } }} />}
-      {data && activeTab === 3 && <PresentationReport accountId={accountId} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} dateRanges={{ current: { since: reportDates?.current.sinceLastMonth, until: reportDates?.current.untilLastMonth }, previous: { since: reportDates?.previous.sinceLastMonth, until: reportDates?.previous.untilLastMonth } }} />}
+      {data && activeTab === 0 && <PresentationReport accountId={accountId} clientName={activeClient?.name || 'Dashboard'} label="Últimos 7 Dias" currentData={data.data7Days.current} previousData={data.data7Days.previous} dateRanges={{ current: { since: reportDates?.current.since7Days, until: reportDates?.current.until7Days }, previous: { since: reportDates?.previous.since7Days, until: reportDates?.previous.until7Days } }} />}
+      {data && activeTab === 1 && <PresentationReport accountId={accountId} clientName={activeClient?.name || 'Dashboard'} label="Últimos 30 Dias" currentData={data.data30Days.current} previousData={data.data30Days.previous} dateRanges={{ current: { since: reportDates?.current.since30Days, until: reportDates?.current.until30Days }, previous: { since: reportDates?.previous.since30Days, until: reportDates?.previous.until30Days } }} />}
+      {data && activeTab === 2 && <PresentationReport accountId={accountId} clientName={activeClient?.name || 'Dashboard'} label="Este Mês (Atual)" currentData={data.dataMonth.current} previousData={data.dataMonth.previous} dateRanges={{ current: { since: reportDates?.current.sinceMonth, until: reportDates?.current.untilMonth }, previous: { since: reportDates?.previous.sinceMonth, until: reportDates?.previous.untilMonth } }} />}
+      {data && activeTab === 3 && <PresentationReport accountId={accountId} clientName={activeClient?.name || 'Dashboard'} label="Mês Passado Completo" currentData={data.dataLastMonth.current} previousData={data.dataLastMonth.previous} dateRanges={{ current: { since: reportDates?.current.sinceLastMonth, until: reportDates?.current.untilLastMonth }, previous: { since: reportDates?.previous.sinceLastMonth, until: reportDates?.previous.untilLastMonth } }} />}
       
       {data && (
         <>
@@ -366,7 +366,7 @@ function App() {
               ⚠️ {customError}
             </div>
           )}
-          {customData && <PresentationReport accountId={accountId} label="Período Personalizado" currentData={customData.current} previousData={null} />}
+          {customData && <PresentationReport accountId={accountId} clientName={activeClient?.name || 'Dashboard'} label="Período Personalizado" currentData={customData.current} previousData={null} />}
           {!customData && !customLoading && !customError && (
              <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>
                Selecione um período acima para consultar o Meta Ads.
